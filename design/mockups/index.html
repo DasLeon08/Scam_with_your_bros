@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scam with your Bros – Mockups</title>
+<style>
+@font-face { font-family: "Lilita"; src: url(fonts/lilita-one.woff2) format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 400; src: url(fonts/nunito-400.woff2) format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 700; src: url(fonts/nunito-700.woff2) format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 800; src: url(fonts/nunito-800.woff2) format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 900; src: url(fonts/nunito-900.woff2) format("woff2"); }
+
+:root {
+  --ink: #1b1530;
+  --paper: #fff4dc;
+  --paper2: #ffe9bd;
+  --teal: #1f6f6b;
+  --teal2: #2a8a84;
+  --mustard: #ffc63b;
+  --pink: #ff5d8f;
+  --mint: #5be3b0;
+  --red: #ff4d4d;
+  --sky: #7cc8ff;
+  --violet: #9b7bff;
+  --shadow: 5px 5px 0 var(--ink);
+  --shadow-s: 3px 3px 0 var(--ink);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1280px; height: 720px; overflow: hidden; }
+body {
+  font-family: "Nunito", sans-serif; color: var(--ink); font-weight: 700;
+  background-color: var(--teal);
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(255,255,255,.07) 2px, transparent 2.5px),
+    radial-gradient(circle at 75% 75%, rgba(0,0,0,.10) 2px, transparent 2.5px);
+  background-size: 28px 28px;
+}
+.screen { display: none; width: 1280px; height: 720px; position: relative; }
+.screen.on { display: block; }
+h1, h2, h3, .display { font-family: "Lilita", sans-serif; font-weight: 400; letter-spacing: .5px; }
+.panel { background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: var(--shadow); }
+.btn {
+  font-family: "Lilita", sans-serif; font-size: 22px; letter-spacing: .5px;
+  border: 3px solid var(--ink); border-radius: 12px; padding: 10px 22px; box-shadow: var(--shadow-s);
+  background: var(--mustard); color: var(--ink); display: inline-flex; align-items: center; gap: 10px; cursor: pointer;
+}
+.btn.pink { background: var(--pink); color: #fff; text-shadow: 2px 2px 0 var(--ink); }
+.btn.mint { background: var(--mint); }
+.btn.ghost { background: var(--paper); }
+.btn.sm { font-size: 16px; padding: 6px 12px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 2px solid var(--ink); border-radius: 999px; padding: 2px 10px; font-size: 13px; font-weight: 800; background: #fff; }
+.bar { height: 22px; border: 3px solid var(--ink); border-radius: 999px; background: #fff; overflow: hidden; position: relative; }
+.bar > i { position: absolute; inset: 0 auto 0 0; border-right: 3px solid var(--ink); }
+.bar > span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 13px; font-weight: 900; }
+.mono { font-family: "JetBrains Mono", monospace; }
+.tilt { transform: rotate(-2deg); }
+
+/* ---------- TOP BAR ---------- */
+.top { position: absolute; left: 16px; right: 16px; top: 12px; height: 60px; display: flex; align-items: center; gap: 16px; padding: 0 16px; }
+.logo-s { font-family: "Lilita"; font-size: 26px; line-height: .9; }
+.logo-s small { display: block; font-family: "Nunito"; font-size: 11px; font-weight: 900; letter-spacing: 2px; color: var(--teal); }
+.clock { display: flex; align-items: center; gap: 10px; }
+.clock b { font-family: "Lilita"; font-size: 26px; font-weight: 400; }
+.quota { flex: 1; display: flex; align-items: center; gap: 10px; }
+.quota .bar { flex: 1; height: 26px; }
+.roomchip { font-family: "Lilita"; font-size: 18px; background: var(--ink); color: var(--mustard); border-radius: 10px; padding: 4px 12px; }
+.avs { display: flex; }
+.avs svg { width: 38px; height: 38px; margin-left: -8px; }
+
+/* ---------- TITLE ---------- */
+.title-wrap { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 440px; gap: 40px; padding: 40px 64px; align-items: center; }
+.bigtitle { font-family: "Lilita"; font-size: 112px; line-height: .86; color: var(--mustard); text-shadow: 6px 6px 0 var(--ink); -webkit-text-stroke: 3px var(--ink); }
+.bigtitle span { color: var(--pink); display: block; }
+.tagline { margin-top: 28px; font-size: 22px; font-weight: 900; color: #fff; text-shadow: 2px 2px 0 var(--ink); max-width: 560px; }
+.building { margin-top: 22px; height: 170px; }
+.building svg { width: 408px; height: 170px; }
+.join-card { padding: 28px; display: flex; flex-direction: column; gap: 16px; }
+.join-card label { font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; }
+.input { border: 3px solid var(--ink); border-radius: 12px; background: #fff; padding: 10px 14px; font-size: 20px; font-weight: 800; font-family: "Nunito"; }
+.code-in { font-family: "Lilita"; font-size: 34px; letter-spacing: 12px; text-align: center; text-transform: uppercase; }
+.or { text-align: center; font-weight: 900; color: #8a7a5a; }
+.colors { display: flex; gap: 8px; }
+.colors i { width: 32px; height: 32px; border-radius: 50%; border: 3px solid var(--ink); }
+.colors i.sel { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+/* ---------- LOBBY ---------- */
+.lobby { position: absolute; inset: 24px 40px; display: grid; grid-template-columns: 420px 1fr; gap: 28px; }
+.codebox { padding: 28px; display: flex; flex-direction: column; gap: 14px; }
+.code-big { font-family: "Lilita"; font-size: 92px; letter-spacing: 10px; text-align: center; background: var(--ink); color: var(--mustard); border-radius: 14px; padding: 6px 0; text-shadow: 4px 4px 0 var(--pink); }
+.hint { font-size: 15px; font-weight: 700; color: #5c5140; }
+.players { padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+.pgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.pcard { border: 3px solid var(--ink); border-radius: 14px; background: #fff; padding: 12px; text-align: center; box-shadow: var(--shadow-s); position: relative; }
+.pcard svg { width: 96px; height: 96px; }
+.pcard b { display: block; font-size: 18px; }
+.pcard.empty { background: repeating-linear-gradient(-45deg, var(--paper), var(--paper) 10px, var(--paper2) 10px, var(--paper2) 20px); border-style: dashed; box-shadow: none; display: grid; place-items: center; min-height: 152px; color: #8a7a5a; font-weight: 900; }
+.crown { position: absolute; top: -20px; left: 50%; transform: translateX(-50%) rotate(-8deg); }
+.pcard .crown svg { width: 44px; height: 33px; }
+.settings { display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* ---------- CALL ---------- */
+.call { position: absolute; left: 16px; right: 16px; top: 88px; bottom: 16px; display: grid; grid-template-columns: 290px 1fr 270px; gap: 16px; }
+.caller { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.caller .portrait { background: var(--sky); border: 3px solid var(--ink); border-radius: 12px; height: 168px; display: grid; place-items: center; position: relative; overflow: hidden; }
+.caller .portrait svg { width: 170px; height: 170px; margin-top: 18px; }
+.ring { position: absolute; top: 8px; right: 8px; }
+.caller h2 { font-size: 24px; line-height: 1; }
+.caller .sub { font-size: 13px; color: #5c5140; }
+.traits { display: flex; flex-wrap: wrap; gap: 5px; }
+.trust-l { display: flex; justify-content: space-between; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
+.intel { border: 3px dashed var(--ink); border-radius: 12px; background: var(--mint); padding: 8px 10px; font-size: 13px; }
+.intel b { display: block; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; }
+
+.chat { display: flex; flex-direction: column; overflow: hidden; }
+.chat-h { padding: 12px 16px; border-bottom: 3px solid var(--ink); display: flex; align-items: center; gap: 12px; background: var(--mustard); border-radius: 13px 13px 0 0; }
+.chat-h .display { font-size: 22px; }
+.chat-h .timer { margin-left: auto; font-family: "Lilita"; font-size: 20px; }
+.msgs { flex: 1; padding: 14px 16px; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; overflow: hidden; }
+.msg { max-width: 78%; display: flex; gap: 8px; align-items: flex-end; }
+.msg svg { width: 36px; height: 36px; flex: none; }
+.bubble { border: 3px solid var(--ink); border-radius: 14px; padding: 8px 12px; font-size: 15px; background: #fff; position: relative; box-shadow: var(--shadow-s); }
+.bubble .who { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; opacity: .65; display: block; }
+.msg.me { align-self: flex-end; flex-direction: row-reverse; }
+.msg.me .bubble { background: var(--mustard); }
+.msg.mate .bubble { background: #e6dcff; }
+.delta { position: absolute; top: -12px; right: -10px; font-size: 12px; font-weight: 900; border: 2px solid var(--ink); border-radius: 8px; padding: 0 6px; background: var(--mint); }
+.delta.neg { background: var(--red); color: #fff; }
+.typing { font-size: 13px; color: #5c5140; font-style: italic; }
+.composer { border-top: 3px solid var(--ink); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.sugg { display: flex; gap: 6px; flex-wrap: wrap; }
+.sugg .chip { background: var(--paper2); }
+.sugg .chip.hot { background: var(--mint); }
+.row { display: flex; gap: 8px; }
+.row .input { flex: 1; font-size: 16px; padding: 8px 12px; }
+
+.side { display: flex; flex-direction: column; gap: 16px; }
+.side .panel { padding: 12px 14px; }
+.side h3 { font-size: 18px; margin-bottom: 8px; }
+.qitem { display: flex; align-items: center; gap: 8px; border: 2px solid var(--ink); border-radius: 10px; padding: 6px 8px; background: #fff; margin-bottom: 6px; font-size: 13px; }
+.qitem svg { width: 34px; height: 34px; flex: none; }
+.qitem .t { margin-left: auto; font-family: "Lilita"; font-size: 16px; }
+.qitem.hot { background: #ffe0e8; animation: none; }
+.mate-row { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 6px; }
+.mate-row svg { width: 30px; height: 30px; flex: none; }
+.mate-row .st { font-size: 11px; color: #5c5140; display: block; }
+.boss-tick { background: var(--ink) !important; color: var(--mustard); display: flex; gap: 10px; align-items: center; }
+.boss-tick svg { width: 54px; height: 54px; flex: none; }
+.boss-tick p { font-size: 14px; font-weight: 800; color: #fff; }
+.boss-tick b { color: var(--mustard); display: block; font-family: "Lilita"; font-weight: 400; font-size: 15px; }
+
+/* ---------- HACK ---------- */
+.hack { position: absolute; left: 16px; right: 16px; top: 88px; bottom: 16px; display: grid; grid-template-columns: 1fr 300px; gap: 16px; }
+.desk { border: 3px solid var(--ink); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; background: #3a9b8f; position: relative; }
+.desk-bar { background: #c7c1b4; border-bottom: 3px solid var(--ink); padding: 6px 12px; display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 14px; }
+.desk-bar .dots { display: flex; gap: 6px; }
+.desk-bar .dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--ink); background: var(--red); }
+.desk-bar .dots i:nth-child(2) { background: var(--mustard); }
+.desk-bar .dots i:nth-child(3) { background: var(--mint); }
+.wall { flex: 1; position: relative;
+  background: radial-gradient(circle at 70% 30%, #6fd0c3 0 80px, transparent 81px), linear-gradient(#59b9ad, #2f8a7f); }
+.icons { position: absolute; left: 20px; top: 20px; display: grid; grid-template-columns: repeat(2, 96px); gap: 14px; }
+.icon { text-align: center; color: #fff; font-size: 12px; font-weight: 900; text-shadow: 1px 1px 0 var(--ink); }
+.icon .ic { width: 58px; height: 48px; margin: 0 auto 4px; border: 3px solid var(--ink); border-radius: 6px; background: var(--mustard); box-shadow: var(--shadow-s); display: grid; place-items: center; font-size: 24px; text-shadow: none; }
+.icon.lock .ic { background: var(--red); }
+.icon.sel .ic { outline: 3px dashed #fff; outline-offset: 4px; }
+.win { position: absolute; border: 3px solid var(--ink); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; background: #fff; }
+.win .wt { background: var(--violet); color: #fff; border-bottom: 3px solid var(--ink); padding: 4px 10px; font-size: 13px; font-weight: 900; display: flex; justify-content: space-between; text-shadow: 1px 1px 0 var(--ink); }
+.term { background: #13101f; color: #5be3b0; font-size: 13px; line-height: 1.55; padding: 10px 12px; }
+.term .y { color: var(--mustard); }
+.term .p { color: var(--pink); }
+.hexgrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; padding: 12px; background: #13101f; }
+.hexgrid i { font-style: normal; font-family: "JetBrains Mono"; font-weight: 800; color: #9fe9cf; border: 2px solid #3d3660; border-radius: 6px; text-align: center; padding: 6px 0; font-size: 15px; }
+.hexgrid i.ok { background: var(--mint); color: var(--ink); border-color: var(--ink); }
+.hexgrid i.next { border-color: var(--mustard); color: var(--mustard); box-shadow: 0 0 0 2px var(--mustard); }
+.found { position: absolute; right: 24px; bottom: 24px; width: 300px; padding: 14px; transform: rotate(2deg); background: var(--mint); }
+.found h3 { font-size: 22px; }
+.taskbar { background: #c7c1b4; border-top: 3px solid var(--ink); padding: 4px 10px; display: flex; gap: 8px; align-items: center; font-size: 12px; font-weight: 900; }
+.taskbar .start { border: 2px solid var(--ink); border-radius: 6px; padding: 1px 10px; background: var(--mustard); }
+.disc { font-size: 11px; color: #5c5140; }
+
+/* ---------- BAITER ---------- */
+.dim { position: absolute; inset: 0; background: rgba(27,21,48,.55); }
+.twist { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%) rotate(-1.5deg); width: 720px; padding: 0; overflow: hidden; background: var(--paper); }
+.twist .band { background: var(--red); color: #fff; font-family: "Lilita"; font-size: 46px; text-align: center; padding: 8px 0; text-shadow: 3px 3px 0 var(--ink); border-bottom: 3px solid var(--ink);
+  background-image: repeating-linear-gradient(-45deg, rgba(0,0,0,.12) 0 14px, transparent 14px 28px); }
+.twist .body { display: grid; grid-template-columns: 190px 1fr; gap: 20px; padding: 20px 24px 24px; align-items: center; }
+.twist .portrait { background: #2f2a45; border: 3px solid var(--ink); border-radius: 12px; height: 190px; display: grid; place-items: center; overflow: hidden; }
+.twist .portrait svg { width: 190px; height: 190px; margin-top: 26px; }
+.effects { display: flex; flex-direction: column; gap: 6px; margin: 12px 0 16px; }
+.effects div { border: 2px solid var(--ink); border-radius: 10px; padding: 5px 10px; background: #fff; font-size: 14px; }
+.popup { position: absolute; width: 190px; border: 3px solid var(--ink); border-radius: 10px; background: #fff; box-shadow: var(--shadow-s); font-size: 12px; overflow: hidden; }
+.popup .wt { background: var(--pink); color: #fff; padding: 2px 8px; border-bottom: 2px solid var(--ink); font-weight: 900; display: flex; justify-content: space-between; }
+.popup p { padding: 8px; font-weight: 800; }
+
+/* ---------- BOSS ---------- */
+.boss { position: absolute; inset: 24px 40px; display: grid; grid-template-columns: 430px 1fr; gap: 28px; }
+.boss-l { position: relative; }
+.boss-portrait { position: absolute; left: 0; bottom: 0; width: 430px; height: 470px; background: var(--mustard); border: 3px solid var(--ink); border-radius: 20px; box-shadow: var(--shadow); overflow: hidden; display: flex; align-items: flex-end; justify-content: center;
+  background-image: repeating-conic-gradient(from 0deg at 50% 70%, rgba(255,255,255,.35) 0 10deg, transparent 10deg 20deg); }
+.boss-portrait svg { width: 420px; height: 420px; }
+.speech { position: absolute; left: 10px; top: 0; width: 420px; padding: 16px 20px; font-size: 19px; font-weight: 900; z-index: 2; }
+.speech:after { content: ""; position: absolute; left: 190px; bottom: -22px; border: 12px solid transparent; border-top: 14px solid var(--ink); }
+.speech em { font-style: normal; color: var(--pink); }
+.report { padding: 22px 26px; display: flex; flex-direction: column; gap: 14px; }
+.report h1 { font-size: 40px; line-height: 1; }
+.stars { display: flex; gap: 6px; }
+.stars svg { width: 54px; height: 54px; }
+.result { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.result div { border: 3px solid var(--ink); border-radius: 12px; background: #fff; padding: 8px 12px; }
+.result small { display: block; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 900; color: #5c5140; }
+.result b { font-family: "Lilita"; font-size: 30px; font-weight: 400; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; border: 3px solid var(--ink); border-radius: 12px; overflow: hidden; background: #fff; font-size: 15px; }
+th { background: var(--ink); color: var(--paper); text-align: left; padding: 6px 10px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+td { padding: 6px 10px; border-top: 2px solid #e8dcc2; }
+td svg { width: 28px; height: 28px; vertical-align: middle; margin-right: 6px; }
+.award { display: inline-block; font-size: 12px; border: 2px solid var(--ink); border-radius: 8px; padding: 0 6px; background: var(--mustard); }
+
+/* ---------- SHOP ---------- */
+.shop { position: absolute; left: 40px; right: 40px; top: 20px; bottom: 26px; display: flex; flex-direction: column; gap: 18px; }
+.shop-h { display: flex; align-items: center; gap: 18px; padding: 14px 22px; }
+.shop-h h1 { font-size: 40px; }
+.wallet { margin-left: auto; font-family: "Lilita"; font-size: 30px; background: var(--ink); color: var(--mint); border-radius: 12px; padding: 4px 16px; }
+.items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; flex: 1; }
+.item { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; position: relative; }
+.item .art { height: 92px; border: 3px solid var(--ink); border-radius: 12px; display: grid; place-items: center; }
+.item .art svg { width: 86px; height: 86px; }
+.item h3 { font-size: 22px; line-height: 1; }
+.item p { font-size: 14px; color: #5c5140; flex: 1; }
+.item .buy { display: flex; align-items: center; justify-content: space-between; }
+.price { font-family: "Lilita"; font-size: 22px; }
+.tag { position: absolute; top: -12px; right: 14px; transform: rotate(4deg); background: var(--pink); color: #fff; border: 3px solid var(--ink); border-radius: 8px; font-family: "Lilita"; font-size: 15px; padding: 2px 10px; text-shadow: 1px 1px 0 var(--ink); }
+.votes { display: flex; gap: 2px; }
+.votes svg { width: 26px; height: 26px; }
+.owned { opacity: .6; }
+</style>
+</head>
+<body>
+
+<!-- =================== 1 TITLE =================== -->
+<section class="screen" id="title">
+  <div class="title-wrap">
+    <div>
+      <div class="bigtitle">Scam with<span>your Bros</span></div>
+      <p class="tagline">Willkommen bei <b style="color:var(--mustard)">Bros Inc.</b> – dem absurdesten Callcenter der Welt. Erfinde Maschen, quatsch Fantasie-Anrufer weich und überlebe die Bewertung vom Chef.</p>
+      <div style="margin-top:26px; display:flex; gap:10px; flex-wrap:wrap">
+        <span class="chip">👥 2–8 Spieler</span><span class="chip">🔑 Nur mit Raumcode</span><span class="chip">🤖 KI-Anrufer</span><span class="chip">🍞 100 % fiktiv</span>
+      </div>
+      <div class="building" data-svg="building"></div>
+    </div>
+    <div class="panel join-card">
+      <label>Dein Name</label>
+      <input class="input" value="Leon">
+      <label>Bro-Farbe</label>
+      <div class="colors"><i class="sel" style="background:#ffc63b"></i><i style="background:#ff5d8f"></i><i style="background:#5be3b0"></i><i style="background:#7cc8ff"></i><i style="background:#9b7bff"></i><i style="background:#ff9a3c"></i></div>
+      <button class="btn pink" style="justify-content:center; margin-top:6px">📞 Raum erstellen</button>
+      <div class="or">– oder mit Code beitreten –</div>
+      <input class="input code-in" value="K7QX2" maxlength="5">
+      <button class="btn" style="justify-content:center">Beitreten</button>
+    </div>
+  </div>
+</section>
+
+<!-- =================== 2 LOBBY =================== -->
+<section class="screen" id="lobby">
+  <div class="lobby">
+    <div class="panel codebox">
+      <h2 style="font-size:30px">Dein Raum</h2>
+      <div class="code-big">K7QX2</div>
+      <div class="row"><button class="btn ghost sm">📋 Code kopieren</button><button class="btn ghost sm">💌 Freunde auf Toki einladen</button></div>
+      <p class="hint">Freunde treten nur mit diesem Code bei. Es gibt keine öffentlichen Räume und kein Matchmaking.</p>
+      <div style="border:3px dashed var(--ink); border-radius:12px; padding:10px 14px; background:#fff; font-size:14px; line-height:1.55">
+        <b class="display" style="font-size:17px">So läuft eine Schicht</b><br>
+        ☎️ Anrufe annehmen und eine Masche wählen<br>
+        💬 Den Anrufer im Chat überzeugen<br>
+        💻 Mitspieler hacken Infos vom Fantasie-PC<br>
+        🎯 Tagesquote knacken, Chef glücklich machen
+      </div>
+      <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px">
+        <div class="settings"><span class="chip">⏱ Tag: 6 Min.</span><span class="chip">🎯 Quote: 1000 BB</span><span class="chip">🌐 Deutsch</span></div>
+        <button class="btn pink" style="justify-content:center; font-size:28px">▶ Schicht starten</button>
+        <p class="hint" style="text-align:center">Nur der Host kann starten · 4 von 8 Bros da</p>
+      </div>
+    </div>
+    <div class="panel players">
+      <div style="display:flex; align-items:center; gap:14px">
+        <h1 style="font-size:40px">Die Belegschaft</h1>
+        <span class="chip" style="margin-left:auto">4 / 8</span>
+      </div>
+      <div class="pgrid">
+        <div class="pcard"><div class="crown" data-svg="crown"></div><div data-svg="bro:#ffc63b:cap"></div><b>Leon</b><span class="chip" style="background:var(--mustard)">Host</span></div>
+        <div class="pcard"><div data-svg="bro:#ff5d8f:bun"></div><b>Mia</b><span class="chip" style="background:var(--mint)">Bereit</span></div>
+        <div class="pcard"><div data-svg="bro:#7cc8ff:glasses"></div><b>Jonas</b><span class="chip" style="background:var(--mint)">Bereit</span></div>
+        <div class="pcard"><div data-svg="bro:#9b7bff:none"></div><b>Sam</b><span class="chip">Sucht Kaffee…</span></div>
+        <div class="pcard empty">Platz frei</div><div class="pcard empty">Platz frei</div><div class="pcard empty">Platz frei</div><div class="pcard empty">Platz frei</div>
+      </div>
+      <div class="panel" style="box-shadow:none; background:var(--ink); color:#fff; padding:12px 16px; display:flex; gap:14px; align-items:center">
+        <div data-svg="boss" style="width:64px;height:64px;flex:none"></div>
+        <p style="font-size:16px; font-weight:800"><b class="display" style="color:var(--mustard); font-size:18px">CHEF BRUNO BRÜLLMANN:</b><br>«Ich will heute TAUSEND Bro-Bucks sehen! Und wer seinen Kaffee verschüttet, putzt die Möwen!»</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== 3 CALL =================== -->
+<section class="screen" id="call">
+  <div class="panel top" data-top="call"></div>
+  <div class="call">
+    <div class="panel caller">
+      <div class="portrait"><div data-svg="gustav"></div><span class="chip ring" style="background:var(--mint)">● Live</span></div>
+      <div><h2>Gustav Grummelbart</h2><div class="sub">Pensionierter Leuchtturmwärter, 71 · Möwenflüsterer</div></div>
+      <div class="traits"><span class="chip">🧐 Misstrauisch</span><span class="chip">🐦 Liebt Möwen</span><span class="chip">👂 Hört schlecht</span></div>
+      <div class="trust-l"><span>Vertrauen</span><span>62 %</span></div>
+      <div class="bar" style="height:26px"><i style="width:62%; background:linear-gradient(90deg,var(--red),var(--mustard) 45%,var(--mint))"></i></div>
+      <div class="sub">Stimmung: <b>skeptisch, aber neugierig</b></div>
+      <div class="intel"><b>🔓 Intel von Mia</b>Sein Hamster heisst «Sir Knabberton».</div>
+    </div>
+
+    <div class="panel chat">
+      <div class="chat-h"><span style="font-size:26px">🍞🦠</span><div><div class="display">Masche: «Ihr Toaster hat einen Virus»</div><div style="font-size:12px">Ziel: 220 Bro-Bucks für die «Toaster-Impfung»</div></div><span class="timer">⏳ 1:24</span></div>
+      <div class="msgs">
+        <div class="msg"><div data-svg="gustav-s"></div><div class="bubble"><span class="who">Gustav</span>Hallo? Wer ist da? Wenn das wieder die Möwen-Versicherung ist, lege ich SOFORT auf!</div></div>
+        <div class="msg me"><div data-svg="bro:#ffc63b:cap"></div><div class="bubble"><span class="who">Leon · Bros Inc.</span>Guten Tag, Herr Grummelbart! Hier ist die Abteilung für Küchengeräte-Gesundheit. Ihr Toaster hustet seit Dienstag.<span class="delta">+6</span></div></div>
+        <div class="msg"><div data-svg="gustav-s"></div><div class="bubble"><span class="who">Gustav</span>Mein Toaster… HUSTET? Der ist von 1974! Der hat noch nie gehustet. Höchstens gebrummt.<span class="delta neg">−4</span></div></div>
+        <div class="msg mate"><div data-svg="bro:#ff5d8f:bun"></div><div class="bubble"><span class="who">Mia (Team-Tipp)</span>Sag was über Sir Knabberton! 🐹</div></div>
+        <div class="msg me"><div data-svg="bro:#ffc63b:cap"></div><div class="bubble"><span class="who">Leon · Bros Inc.</span>Genau das Brummen! Und unsere Daten zeigen: Sir Knabberton war gefährlich nah am Krümelfach.<span class="delta">+15</span></div></div>
+        <div class="msg"><div data-svg="gustav-s"></div><div class="bubble"><span class="who">Gustav</span>WOHER kennen Sie meinen Hamster?! … Na gut. Was kostet so eine Toaster-Impfung?</div></div>
+        <div class="typing">Gustav sucht seine Lesebrille…</div>
+      </div>
+      <div class="composer">
+        <div class="sugg"><span class="chip hot">🔓 Intel: Sir Knabberton</span><span class="chip">🎁 Gratis-Krümelfach</span><span class="chip">😱 Dringlichkeit</span><span class="chip">📴 Auflegen</span></div>
+        <div class="row"><input class="input" value="Nur 220 Bro-Bucks, und der Toaster bekommt sogar einen Lolli"><button class="btn sm">Senden ➤</button></div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <h3>📞 Warteschlange (3)</h3>
+        <div class="qitem hot"><div data-svg="kiki-s"></div><div><b>Kiki Sternschnuppe</b><br><span style="font-size:11px">Influencerin · ungeduldig</span></div><span class="t">0:12</span></div>
+        <div class="qitem"><div data-svg="prof-s"></div><div><b>Prof. Balduin Knopf</b><br><span style="font-size:11px">Pedant · zählt alles</span></div><span class="t">0:31</span></div>
+        <div class="qitem"><div data-svg="unknown-s"></div><div><b>Unbekannt</b><br><span style="font-size:11px">??? · klingt verdächtig ruhig</span></div><span class="t">0:48</span></div>
+      </div>
+      <div class="panel">
+        <h3>🧑‍🤝‍🧑 Team</h3>
+        <div class="mate-row"><div data-svg="bro:#ffc63b:cap"></div><div><b>Leon (du)</b><span class="st">Im Gespräch mit Gustav</span></div></div>
+        <div class="mate-row"><div data-svg="bro:#ff5d8f:bun"></div><div><b>Mia</b><span class="st">💻 Hackt Gustavs PC · 72 %</span></div></div>
+        <div class="mate-row"><div data-svg="bro:#7cc8ff:glasses"></div><div><b>Jonas</b><span class="st">☎️ Nimmt Kiki ab…</span></div></div>
+        <div class="mate-row"><div data-svg="bro:#9b7bff:none"></div><div><b>Sam</b><span class="st">☕ Pause am Wasserspender</span></div></div>
+      </div>
+      <div class="panel boss-tick"><div data-svg="boss"></div><p><b>CHEF BRUNO</b>«Mehr Toaster! MEHR! Leon, ich sehe dich!»</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== 4 HACK =================== -->
+<section class="screen" id="hack">
+  <div class="panel top" data-top="hack"></div>
+  <div class="hack">
+    <div class="desk">
+      <div class="desk-bar"><div class="dots"><i></i><i></i><i></i></div>Fernzugriff 😎 · <span class="mono">GrummelOS 3.1</span> · Gustavs Rechner<span style="margin-left:auto" class="chip">⏱ 0:18</span></div>
+      <div class="wall">
+        <div class="icons">
+          <div class="icon"><div class="ic">🐦</div>Möwenfotos</div>
+          <div class="icon"><div class="ic">🍲</div>Rezepte</div>
+          <div class="icon sel"><div class="ic">🐹</div>Haustiere.txt</div>
+          <div class="icon lock"><div class="ic">🔒</div>GEHEIM (nicht öffnen)</div>
+          <div class="icon"><div class="ic">🗼</div>Leuchtturm.exe</div>
+          <div class="icon"><div class="ic">🗑</div>Papierkorb</div>
+        </div>
+        <div class="win" style="left:250px; top:24px; width:420px">
+          <div class="wt"><span>Terminal von Mia</span><span>✕</span></div>
+          <div class="term mono">
+            <div><span class="y">&gt;</span> umgehe_firewall <span class="p">--mit-charme</span></div>
+            <div>  Firewall fühlt sich geschmeichelt… ✔</div>
+            <div><span class="y">&gt;</span> entschlüssle Haustiere.txt</div>
+            <div>  Krümel-Verschlüsselung erkannt ████████░░ 72 %</div>
+            <div><span class="y">&gt;</span> tippe die leuchtenden Codes in Reihenfolge:</div>
+          </div>
+          <div class="hexgrid">
+            <i class="ok">B4</i><i>7E</i><i>C0</i><i class="ok">FF</i><i>12</i><i>A9</i>
+            <i>3D</i><i class="next">1F</i><i>8B</i><i>E2</i><i class="ok">4C</i><i>90</i>
+            <i>6A</i><i>D7</i><i>05</i><i>BB</i><i>71</i><i>CE</i>
+          </div>
+        </div>
+        <div class="win" style="left:300px; top:330px; width:240px; transform:rotate(-3deg)">
+          <div class="wt" style="background:var(--pink)"><span>Einkaufsliste.txt</span><span>✕</span></div>
+          <div style="padding:8px 10px; font-size:13px; line-height:1.5">- Möwenfutter (viel)<br>- Toastbrot<br>- Leckerli für S. K.<br>- Neue Lesebrille??</div>
+        </div>
+        <div class="panel found">
+          <h3>🐹 Intel gefunden!</h3>
+          <p style="font-size:14px; margin:6px 0 10px">Gustavs Hamster heisst <b>«Sir Knabberton»</b>. Wer ihn im Gespräch erwähnt, bekommt <b>+15 Vertrauen</b>.</p>
+          <button class="btn sm">An Leon senden ➤</button>
+        </div>
+      </div>
+      <div class="taskbar"><span class="start">Start</span><span>Möwenfotos</span><span>Terminal</span><span style="margin-left:auto">🔊 14:27</span></div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>💻 Fake-Hacking</h3>
+        <p style="font-size:14px; margin-bottom:10px">Tippe die leuchtenden Codes in der richtigen Reihenfolge, bevor die Zeit abläuft. Jede geöffnete Datei kann <b>Intel</b> für das Gespräch deines Teams enthalten.</p>
+        <div class="trust-l"><span>Fortschritt</span><span>3 / 5</span></div>
+        <div class="bar"><i style="width:60%; background:var(--violet)"></i></div>
+        <p class="disc" style="margin-top:10px">Reine Fantasie-Hackerei mit Krümeln und Charme. Funktioniert nur bei Bros Inc.</p>
+      </div>
+      <div class="panel">
+        <h3>📞 Leon telefoniert</h3>
+        <div class="mate-row"><div data-svg="gustav-s"></div><div><b>Gustav Grummelbart</b><span class="st">Vertrauen 47 % · wird ungeduldig</span></div></div>
+        <div class="bar" style="height:16px"><i style="width:47%; background:var(--mustard)"></i></div>
+      </div>
+      <div class="panel boss-tick"><div data-svg="boss"></div><p><b>CHEF BRUNO</b>«Mia! Schneller tippen! Ich zahle euch nicht fürs Blinzeln!»</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== 5 SCAMBAITER =================== -->
+<section class="screen" id="baiter">
+  <div class="panel top" data-top="call"></div>
+  <div class="call" style="filter: saturate(.6)">
+    <div class="panel caller"><div class="portrait" style="background:#2f2a45"><div data-svg="agent"></div></div><h2>«Herr Blümchen»</h2><div class="sub">Behauptet, Hobby-Gärtner zu sein</div><div class="trust-l"><span>Vertrauen</span><span>??? %</span></div><div class="bar"><i style="width:88%; background:var(--red)"></i></div></div>
+    <div class="panel chat"><div class="chat-h"><div class="display">Masche: «Ihre Wolke ist voll ☁️»</div></div><div class="msgs"></div></div>
+    <div class="side"><div class="panel" style="flex:1"></div></div>
+  </div>
+  <div class="dim"></div>
+  <div class="popup" style="left:70px; top:120px; transform:rotate(-6deg)"><div class="wt"><span>🐱 Katzen.exe</span><span>✕</span></div><p>Glückwunsch! Sie haben 400 Katzen abonniert!</p></div>
+  <div class="popup" style="left:1010px; top:150px; transform:rotate(5deg)"><div class="wt"><span>🐱 Katzen.exe</span><span>✕</span></div><p>Miau. Miau. Miau. (387 weitere)</p></div>
+  <div class="popup" style="left:90px; top:520px; transform:rotate(3deg)"><div class="wt"><span>🎺 Panflöte.mp3</span><span>✕</span></div><p>Ihr Headset spielt jetzt nur noch Panflöte.</p></div>
+  <div class="popup" style="left:1030px; top:510px; transform:rotate(-4deg)"><div class="wt"><span>🐱 Katzen.exe</span><span>✕</span></div><p>Neue Katze! Sie heisst Kevin.</p></div>
+  <div class="panel twist">
+    <div class="band">PLOT-TWIST! SCAMBAITER!</div>
+    <div class="body">
+      <div class="portrait"><div data-svg="agent-reveal"></div></div>
+      <div>
+        <h2 style="font-size:28px; line-height:1">«Herr Blümchen» ist in Wahrheit<br><span style="color:var(--pink)">Agent Brösel</span>!</h2>
+        <p style="font-size:16px; margin-top:8px">«Haha! Ich habe euch die ganze Zeit hingehalten. Jetzt schlage ICH zurück!»</p>
+        <div class="effects">
+          <div>💸 Team verliert <b>150 Bro-Bucks</b></div>
+          <div>🐱 400 Katzen-Pop-ups auf allen Bildschirmen</div>
+          <div>🎺 Headsets spielen 30 Sekunden Panflöte</div>
+        </div>
+        <div class="row"><button class="btn mint">🧹 Pop-ups wegklicken (Minigame)</button><button class="btn ghost">📴 Auflegen</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== 6 BOSS =================== -->
+<section class="screen" id="boss">
+  <div class="boss">
+    <div class="boss-l">
+      <div class="panel speech">«Tausendhundertzwanzig Bro-Bucks?! Nicht schlecht, Bros. Aber wer hat dem <em>Scambaiter</em> 150 Bucks geschenkt?! Morgen will ich <em>1500</em> sehen!»</div>
+      <div class="boss-portrait"><div data-svg="boss-big"></div></div>
+    </div>
+    <div class="panel report">
+      <div style="display:flex; align-items:center; gap:16px">
+        <div><div style="font-size:13px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:var(--teal)">Feierabend · Tag 1</div><h1>Chef-Bewertung</h1></div>
+        <div class="stars" style="margin-left:auto" data-stars="3"></div>
+      </div>
+      <div class="result">
+        <div><small>Tagesquote</small><b>1120 / 1000</b> <span class="chip" style="background:var(--mint)">✔ geschafft</span></div>
+        <div><small>Anrufe</small><b>11</b> <span class="chip">7 erfolgreich</span></div>
+        <div><small>Aufgelegt</small><b>3</b> <span class="chip" style="background:#ffd4d4">1 Scambaiter</span></div>
+      </div>
+      <table>
+        <tr><th>Bro</th><th>Anrufe</th><th>Erfolge</th><th>Bro-Bucks</th><th>Auszeichnung</th></tr>
+        <tr><td><span data-svg="bro:#ffc63b:cap"></span>Leon</td><td>4</td><td>3</td><td>520</td><td><span class="award">🍞 Goldener Toaster</span></td></tr>
+        <tr><td><span data-svg="bro:#ff5d8f:bun"></span>Mia</td><td>2</td><td>2</td><td>310</td><td><span class="award" style="background:var(--violet); color:#fff">💻 Hacker-Hamster</span></td></tr>
+        <tr><td><span data-svg="bro:#7cc8ff:glasses"></span>Jonas</td><td>3</td><td>1</td><td>290</td><td><span class="award" style="background:#fff">😤 Meist aufgelegt</span></td></tr>
+        <tr><td><span data-svg="bro:#9b7bff:none"></span>Sam</td><td>2</td><td>1</td><td>0</td><td><span class="award" style="background:var(--red); color:#fff">🐱 Opfer von Agent Brösel</span></td></tr>
+      </table>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+        <div style="border:3px dashed var(--ink); border-radius:12px; padding:10px 14px; background:#fff; font-size:14px; transform:rotate(-.6deg)"><b class="display" style="font-size:17px">📝 Notizen vom Chef</b><br>+ Leon: Echtes Toaster-Talent.<br>+ Mia: Hamster-Intel war Gold wert.<br>− Sam: Bitte keine Katzen mehr abonnieren.</div>
+        <div style="border:3px solid var(--ink); border-radius:12px; padding:10px 14px; background:var(--paper2); font-size:14px"><b class="display" style="font-size:17px">📅 Morgen: Tag 2</b><br>Quote: <b>1500 BB</b><br>Neue Anrufer: Frau Wirbelwind, Opa Turbo<br>Chef-Laune: 😤 angespannt</div>
+      </div>
+      <div class="row" style="margin-top:auto; justify-content:flex-end"><button class="btn ghost">📊 Alle Gespräche</button><button class="btn pink">🛒 Ab in den Shop</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== 7 SHOP =================== -->
+<section class="screen" id="shop">
+  <div class="shop">
+    <div class="panel shop-h">
+      <div data-svg="vending" style="width:60px; height:60px"></div>
+      <div><h1 style="line-height:1">Bro-Shop</h1><div style="font-size:14px">Das Team kauft gemeinsam: Jeder stimmt ab, der Host bestätigt.</div></div>
+      <div class="wallet">💰 1120 BB</div>
+    </div>
+    <div class="items">
+      <div class="panel item"><span class="tag">Beliebt</span><div class="art" style="background:var(--sky)" data-svg="headset"></div><h3>Headset Deluxe</h3><p>Klingt so seriös, dass jeder Anrufer mit +5 Vertrauen startet.</p><div class="buy"><span class="price">300 BB</span><div class="votes"><span data-svg="bro:#ffc63b:cap"></span><span data-svg="bro:#ff5d8f:bun"></span><span data-svg="bro:#7cc8ff:glasses"></span></div></div></div>
+      <div class="panel item"><div class="art" style="background:var(--mint)" data-svg="cloud"></div><h3>Masche: «Ihre Wolke ist voll»</h3><p>Neue Masche! Überzeug Anrufer, dass ihre Fantasie-Wolke geleert werden muss.</p><div class="buy"><span class="price">450 BB</span><div class="votes"><span data-svg="bro:#9b7bff:none"></span></div></div></div>
+      <div class="panel item"><div class="art" style="background:var(--mustard)" data-svg="coffee"></div><h3>Kaffeemaschine 3000</h3><p>Koffein-Turbo: +5 Sekunden in jedem Minigame.</p><div class="buy"><span class="price">250 BB</span><button class="btn sm">Abstimmen</button></div></div>
+      <div class="panel item"><div class="art" style="background:var(--pink)" data-svg="fish"></div><h3>Masche: «Ihr Goldfisch hat gewonnen»</h3><p>Der Goldfisch des Anrufers hat angeblich einen Wettbewerb gewonnen. Gebühren fallen an.</p><div class="buy"><span class="price">600 BB</span><button class="btn sm">Abstimmen</button></div></div>
+      <div class="panel item"><div class="art" style="background:#d8f0c0" data-svg="cactus"></div><h3>Bürokaktus Kurt</h3><p>Beruhigt misstrauische Anrufer. Misstrauen steigt 20 % langsamer.</p><div class="buy"><span class="price">350 BB</span><button class="btn sm">Abstimmen</button></div></div>
+      <div class="panel item owned"><span class="tag" style="background:var(--teal)">Gekauft</span><div class="art" style="background:#e6dcff" data-svg="earmuffs"></div><h3>Chef-Ohrenschützer</h3><p>Chef Bruno brüllt nur noch halb so laut. Rein kosmetisch, aber herrlich.</p><div class="buy"><span class="price">✔</span></div></div>
+    </div>
+  </div>
+</section>
+
+<script>
+/* ---------- tiny SVG art kit: all original, drawn in code ---------- */
+const INK = "#1b1530";
+const S = (w, inner, vb = "0 0 100 100") => `<svg viewBox="${vb}" width="${w}" height="${w}" xmlns="http://www.w3.org/2000/svg" stroke="${INK}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">${inner}</svg>`;
+
+function bro(color, hair) {
+  const hairs = {
+    cap: `<path d="M24 40 Q26 16 50 15 Q74 16 76 40 Z" fill="${INK}"/><path d="M50 15 Q74 16 76 40 L90 42 Q92 36 80 33" fill="${INK}"/><circle cx="50" cy="16" r="3" fill="#fff"/>`,
+    bun: `<path d="M24 44 Q22 18 50 18 Q78 18 76 44 Q66 30 50 30 Q34 30 24 44Z" fill="#6b3b2a"/><circle cx="50" cy="12" r="10" fill="#6b3b2a"/>`,
+    glasses: `<path d="M26 40 Q30 18 50 19 Q70 18 74 40 Q62 28 50 30 Q38 28 26 40Z" fill="#e8b04a"/><circle cx="40" cy="50" r="8" fill="none"/><circle cx="60" cy="50" r="8" fill="none"/><path d="M48 50 L52 50" />`,
+    none: `<path d="M27 38 Q32 20 50 20 Q68 20 73 38" fill="none" stroke-width="5"/>`
+  };
+  const eyes = hair === "glasses" ? `<circle cx="40" cy="50" r="2.5" fill="${INK}" stroke="none"/><circle cx="60" cy="50" r="2.5" fill="${INK}" stroke="none"/>`
+                                   : `<circle cx="40" cy="50" r="3.5" fill="${INK}" stroke="none"/><circle cx="60" cy="50" r="3.5" fill="${INK}" stroke="none"/>`;
+  return S(100, `
+    <path d="M14 100 Q16 76 50 74 Q84 76 86 100Z" fill="${color}"/>
+    <path d="M42 74 L50 86 L58 74" fill="#fff"/>
+    <circle cx="50" cy="46" r="26" fill="#ffd9b0"/>
+    ${hairs[hair] || ""}
+    ${eyes}
+    <path d="M40 60 Q50 68 60 60" fill="none"/>
+    <circle cx="33" cy="57" r="3" fill="#ff9aa8" stroke="none"/><circle cx="67" cy="57" r="3" fill="#ff9aa8" stroke="none"/>
+    <path d="M22 46 Q22 22 50 21 Q78 22 78 46" fill="none" stroke-width="4"/>
+    <rect x="16" y="42" width="10" height="16" rx="4" fill="${color}"/>
+    <path d="M21 58 Q24 68 38 66" fill="none"/><circle cx="39" cy="66" r="3" fill="${INK}"/>`);
+}
+
+const gustav = (w) => S(w, `
+  <path d="M10 100 Q14 74 50 72 Q86 74 90 100Z" fill="#2d5d9f"/>
+  <path d="M30 80 L70 80" stroke="#fff" stroke-width="4"/><path d="M26 90 L74 90" stroke="#fff" stroke-width="4"/>
+  <circle cx="50" cy="46" r="25" fill="#f2c9a0"/>
+  <path d="M26 52 Q28 82 50 84 Q72 82 74 52 Q66 62 50 62 Q34 62 26 52Z" fill="#e9e6df"/>
+  <path d="M40 62 Q50 58 60 62" fill="none"/>
+  <path d="M34 42 L44 44 M66 42 L56 44" stroke-width="4"/>
+  <circle cx="40" cy="49" r="2.8" fill="${INK}" stroke="none"/><circle cx="60" cy="49" r="2.8" fill="${INK}" stroke="none"/>
+  <path d="M47 50 Q50 58 53 50" fill="#e9a982"/>
+  <path d="M22 34 L78 34 L74 22 Q50 12 26 22Z" fill="#1c2f55"/><rect x="20" y="32" width="60" height="7" rx="3" fill="#13203d"/>
+  <path d="M44 24 L50 19 L56 24 L50 29Z" fill="#ffc63b"/>`);
+
+const kiki = (w) => S(w, `
+  <path d="M12 100 Q16 76 50 74 Q84 76 88 100Z" fill="#ff5d8f"/>
+  <circle cx="50" cy="46" r="25" fill="#ffd2b8"/>
+  <path d="M24 46 Q20 18 50 18 Q80 18 76 46 Q72 30 50 30 Q28 30 24 46Z" fill="#ff8ac6"/>
+  <circle cx="50" cy="12" r="11" fill="#ff8ac6"/>
+  <rect x="29" y="42" width="18" height="12" rx="6" fill="#1b1530"/><rect x="53" y="42" width="18" height="12" rx="6" fill="#1b1530"/><path d="M47 47 L53 47"/>
+  <path d="M42 62 Q50 70 58 62" fill="#ff4d6d"/>
+  <path d="M78 64 l6 -6 l2 8z" fill="#ffc63b"/>`);
+
+const prof = (w) => S(w, `
+  <path d="M12 100 Q16 76 50 74 Q84 76 88 100Z" fill="#8a6a4a"/>
+  <path d="M44 74 L50 92 L56 74" fill="#c33"/>
+  <circle cx="50" cy="46" r="25" fill="#f4d3b0"/>
+  <path d="M25 44 Q22 30 30 28 M75 44 Q78 30 70 28" stroke="#ccc" stroke-width="6" fill="none"/>
+  <circle cx="60" cy="48" r="8" fill="none" stroke-width="3"/><path d="M68 50 Q74 64 70 76" fill="none" stroke-width="1.5"/>
+  <circle cx="40" cy="48" r="2.5" fill="${INK}" stroke="none"/><circle cx="60" cy="48" r="2.5" fill="${INK}" stroke="none"/>
+  <path d="M40 64 L60 62" fill="none"/>
+  <path d="M34 40 L46 38 M54 38 L66 40"/>`);
+
+const unknown = (w) => S(w, `
+  <path d="M12 100 Q16 76 50 74 Q84 76 88 100Z" fill="#4a4560"/>
+  <circle cx="50" cy="46" r="25" fill="#3a3550"/>
+  <text x="50" y="58" font-family="Lilita" font-size="34" text-anchor="middle" fill="#ffc63b" stroke="none">?</text>`);
+
+const agent = (w, reveal) => S(w, `
+  <path d="M10 100 Q14 74 50 72 Q86 74 90 100Z" fill="#7a6a4a"/>
+  <path d="M40 72 L50 100 L60 72" fill="#ddd"/><path d="M48 76 L52 76 L54 96 L50 100 L46 96Z" fill="${reveal ? "#ff4d4d" : "#555"}"/>
+  <circle cx="50" cy="48" r="24" fill="#f0c9a0"/>
+  <path d="M16 36 L84 36 L76 30 Q74 12 50 12 Q26 12 24 30Z" fill="#5a4a30"/><rect x="24" y="28" width="52" height="6" fill="#2a2018"/>
+  ${reveal
+    ? `<rect x="28" y="42" width="44" height="12" rx="4" fill="#111"/><path d="M50 44 L50 52" stroke="#555"/><path d="M38 62 Q50 72 62 62" fill="#fff"/>`
+    : `<circle cx="40" cy="49" r="2.8" fill="${INK}" stroke="none"/><circle cx="60" cy="49" r="2.8" fill="${INK}" stroke="none"/><path d="M42 63 L58 63"/>`}
+  <path d="M34 56 Q42 60 50 56 Q58 60 66 56" fill="#5a4a30" stroke-width="2"/>`);
+
+const boss = (w) => S(w, `
+  <path d="M6 100 Q10 70 50 68 Q90 70 94 100Z" fill="#3b3b4f"/>
+  <path d="M40 68 L50 80 L60 68" fill="#fff"/><path d="M47 74 L53 74 L56 98 L50 100 L44 98Z" fill="#ffc63b"/>
+  <circle cx="50" cy="42" r="26" fill="#ffc9a0"/>
+  <path d="M24 34 Q26 14 50 14 Q74 14 76 34 Q70 24 50 26 Q30 24 24 34Z" fill="#222"/>
+  <path d="M33 36 L45 40 M67 36 L55 40" stroke-width="5"/>
+  <circle cx="41" cy="45" r="3" fill="${INK}" stroke="none"/><circle cx="59" cy="45" r="3" fill="${INK}" stroke="none"/>
+  <path d="M28 56 Q38 48 50 54 Q62 48 72 56 Q62 62 50 58 Q38 62 28 56Z" fill="#222"/>
+  <ellipse cx="50" cy="64" rx="8" ry="5" fill="#8c1c2e"/>
+  <path d="M30 30 l-4 -4 M70 30 l4 -4" stroke-width="2"/>`);
+
+const bossBig = () => S(420, `
+  <g transform="translate(0,6)">
+  <path d="M6 100 Q10 70 50 68 Q90 70 94 100Z" fill="#3b3b4f"/>
+  <path d="M40 68 L50 80 L60 68" fill="#fff"/><path d="M47 74 L53 74 L56 98 L50 100 L44 98Z" fill="#ffc63b"/>
+  <circle cx="50" cy="42" r="26" fill="#ffc9a0"/>
+  <path d="M24 34 Q26 14 50 14 Q74 14 76 34 Q70 24 50 26 Q30 24 24 34Z" fill="#222"/>
+  <path d="M33 36 L45 40 M67 36 L55 40" stroke-width="4"/>
+  <circle cx="41" cy="45" r="3" fill="${INK}" stroke="none"/><circle cx="59" cy="45" r="3" fill="${INK}" stroke="none"/>
+  <path d="M28 56 Q38 48 50 54 Q62 48 72 56 Q62 62 50 58 Q38 62 28 56Z" fill="#222"/>
+  <ellipse cx="50" cy="63" rx="7" ry="4" fill="#8c1c2e"/>
+  <g transform="translate(66,52) rotate(-20)"><path d="M0 4 L10 0 L26 -8 L26 22 L10 14 L0 10Z" fill="#ff5d8f"/><rect x="-6" y="3" width="8" height="8" rx="2" fill="#ddd"/></g>
+  </g>`);
+
+const crown = () => S(40, `<path d="M8 30 L12 10 L22 22 L30 6 L38 22 L48 10 L52 30Z" fill="#ffc63b" transform="scale(.7) translate(2,6)"/>`, "0 0 40 30");
+const star = (on) => S(54, `<path d="M50 6 L62 36 L94 38 L69 58 L78 90 L50 72 L22 90 L31 58 L6 38 L38 36Z" fill="${on ? "#ffc63b" : "#fff"}" stroke-width="5"/>`);
+
+const building = () => `<svg width="480" height="200" viewBox="0 0 480 200" stroke="${INK}" stroke-width="3" stroke-linejoin="round">
+  <rect x="40" y="40" width="250" height="160" fill="#fff4dc"/>
+  <rect x="40" y="40" width="250" height="26" fill="#ff5d8f"/>
+  <text x="165" y="60" font-family="Lilita" font-size="20" text-anchor="middle" fill="#fff" stroke="none">BROS INC.</text>
+  ${[0,1,2,3,4].map(c=>[0,1,2].map(r=>`<rect x="${58+c*46}" y="${80+r*38}" width="30" height="24" fill="${(c+r)%3? "#7cc8ff":"#ffc63b"}"/>`).join("")).join("")}
+  <rect x="300" y="90" width="110" height="110" fill="#ffe9bd"/>
+  ${[0,1].map(c=>[0,1].map(r=>`<rect x="${316+c*46}" y="${106+r*40}" width="30" height="24" fill="#7cc8ff"/>`).join("")).join("")}
+  <path d="M150 40 L150 10 M150 10 l18 6 l-18 6" fill="#ffc63b"/>
+  <circle cx="360" cy="60" r="18" fill="#ffc63b"/><path d="M350 58 q10 -10 20 0" fill="none"/>
+</svg>`;
+
+const art = {
+  headset: S(110, `<path d="M22 60 Q22 20 50 20 Q78 20 78 60" fill="none" stroke-width="7"/><rect x="14" y="52" width="18" height="28" rx="7" fill="#ffc63b"/><rect x="68" y="52" width="18" height="28" rx="7" fill="#ffc63b"/><path d="M23 80 Q30 92 46 90" fill="none"/><circle cx="48" cy="90" r="5" fill="${INK}"/><path d="M40 12 l4 6 M60 12 l-4 6 M50 8 v8" stroke-width="3"/>`),
+  cloud: S(110, `<path d="M26 70 Q10 70 12 56 Q14 42 30 44 Q34 26 52 28 Q70 28 72 44 Q90 42 90 58 Q88 72 72 70Z" fill="#fff"/><circle cx="40" cy="54" r="3" fill="${INK}"/><circle cx="62" cy="54" r="3" fill="${INK}"/><path d="M44 62 Q51 58 58 62" fill="none"/><path d="M30 78 l-4 10 M50 78 l-2 12 M70 78 l-4 10" stroke="#2a7bd0"/>`),
+  coffee: S(110, `<rect x="24" y="14" width="52" height="70" rx="6" fill="#ff5d8f"/><rect x="32" y="22" width="36" height="16" rx="3" fill="#7cc8ff"/><text x="50" y="35" font-size="11" font-family="Lilita" text-anchor="middle" stroke="none" fill="${INK}">3000</text><rect x="38" y="50" width="24" height="24" fill="#fff"/><path d="M44 50 v-6 M56 50 v-6" /><rect x="20" y="84" width="60" height="8" fill="${INK}"/>`),
+  fish: S(110, `<circle cx="50" cy="56" r="34" fill="#cdeeff" opacity=".9"/><path d="M30 56 Q46 38 62 56 Q46 74 30 56Z" fill="#ff9a3c"/><path d="M62 56 L76 46 L76 66Z" fill="#ff9a3c"/><circle cx="40" cy="53" r="2.5" fill="${INK}"/><path d="M46 18 L54 18 L56 30 L44 30Z" fill="#ffc63b"/><path d="M42 30 L58 30" />`),
+  cactus: S(110, `<path d="M42 80 L42 30 Q42 18 50 18 Q58 18 58 30 L58 80" fill="#5bbf6a"/><path d="M42 56 L32 56 Q26 56 26 48 L26 40" fill="none" stroke-width="7" stroke="#5bbf6a"/><path d="M42 56 L32 56 Q26 56 26 48 L26 40" fill="none"/><circle cx="46" cy="36" r="2" fill="${INK}"/><circle cx="54" cy="36" r="2" fill="${INK}"/><path d="M46 44 Q50 48 54 44" fill="none"/><path d="M30 80 L70 80 L64 96 L36 96Z" fill="#d0743c"/>`),
+  earmuffs: S(110, `<path d="M24 60 Q24 22 50 22 Q76 22 76 60" fill="none" stroke-width="6"/><circle cx="24" cy="62" r="14" fill="#ff8ac6"/><circle cx="76" cy="62" r="14" fill="#ff8ac6"/><path d="M40 86 l20 0" /><text x="50" y="98" font-size="10" text-anchor="middle" font-family="Lilita" fill="${INK}" stroke="none">psst</text>`),
+  vending: S(60, `<rect x="18" y="8" width="64" height="86" rx="6" fill="#ff5d8f"/><rect x="26" y="16" width="34" height="56" fill="#7cc8ff"/><circle cx="34" cy="28" r="4" fill="#ffc63b"/><circle cx="50" cy="28" r="4" fill="#5be3b0"/><circle cx="34" cy="44" r="4" fill="#fff"/><circle cx="50" cy="44" r="4" fill="#ffc63b"/><rect x="66" y="20" width="10" height="20" fill="#fff"/><rect x="26" y="78" width="48" height="8" fill="${INK}"/>`)
+};
+
+function render() {
+  document.querySelectorAll("[data-svg]").forEach((el) => {
+    const k = el.dataset.svg;
+    if (k.startsWith("bro:")) { const [, c, h] = k.split(":"); el.innerHTML = bro(c, h); return; }
+    const map = {
+      gustav: () => gustav(170), "gustav-s": () => gustav(36),
+      "kiki-s": () => kiki(36), "prof-s": () => prof(36), "unknown-s": () => unknown(36),
+      agent: () => agent(170), "agent-reveal": () => agent(190, true),
+      boss: () => boss(64), "boss-big": bossBig, crown, building,
+      ...Object.fromEntries(Object.entries(art).map(([n, v]) => [n, () => v]))
+    };
+    if (map[k]) el.innerHTML = map[k]();
+  });
+  document.querySelectorAll("[data-stars]").forEach((el) => {
+    const n = +el.dataset.stars; el.innerHTML = [1,2,3,4,5].map(i => star(i <= n)).join("");
+  });
+  document.querySelectorAll("[data-top]").forEach((el) => {
+    const hack = el.dataset.top === "hack";
+    el.innerHTML = `
+      <div class="logo-s">Bros Inc.<small>CALLCENTER</small></div>
+      <div class="clock"><span style="font-size:24px">🕑</span><b>Tag 1 · ${hack ? "14:27" : "14:20"}</b></div>
+      <div class="quota"><span class="display" style="font-size:18px">Quote</span>
+        <div class="bar"><i style="width:${hack ? 66 : 64}%; background:var(--mint)"></i><span>${hack ? 660 : 640} / 1000 Bro-Bucks</span></div></div>
+      <span class="roomchip">K7QX2</span>
+      <div class="avs">${["#ffc63b:cap","#ff5d8f:bun","#7cc8ff:glasses","#9b7bff:none"].map(s => { const [c,h] = s.split(":"); return bro(c,h).replace('width="100" height="100"','width="38" height="38"'); }).join("")}</div>`;
+  });
+}
+render();
+const s = new URLSearchParams(location.search).get("s") || "title";
+document.getElementById(s)?.classList.add("on");
+</script>
+</body>
+</html>
