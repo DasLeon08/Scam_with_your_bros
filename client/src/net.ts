@@ -12,6 +12,11 @@ export function serverUrl(): string {
   return (built || "http://127.0.0.1:8787").replace(/\/+$/, "");
 }
 
+/** Free hosting puts the server to sleep: knock early so it is awake when the player clicks. */
+export function wakeServer() {
+  fetch(`${serverUrl()}/api/health`, { cache: "no-store" }).catch(() => {});
+}
+
 export async function createRoom(): Promise<string> {
   const res = await fetch(`${serverUrl()}/api/rooms`, { method: "POST" }).catch(() => null);
   if (!res) throw new Error("offline");

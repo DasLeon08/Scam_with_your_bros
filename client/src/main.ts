@@ -15,7 +15,7 @@ import {
   type RoomState,
 } from "@bros/shared";
 import * as art from "./art";
-import { Connection, createRoom, inToki, linkCode, tellToki, type Profile } from "./net";
+import { Connection, createRoom, inToki, linkCode, tellToki, wakeServer, type Profile } from "./net";
 
 /* ================================================================== */
 /* state                                                              */
@@ -713,10 +713,13 @@ stage.addEventListener("click", async (e) => {
       if (busy) return;
       busy = true;
       renderTitleError("Raum wird erstellt…");
+      const slow = setTimeout(() => busy && renderTitleError("Der Spielserver wacht gerade auf. Das kann bis zu einer Minute dauern…"), 4000);
       try {
         const code = await createRoom();
+        clearTimeout(slow);
         join(code);
       } catch (err) {
+        clearTimeout(slow);
         busy = false;
         titleError = (err as Error).message === "rate_limited" ? "Zu viele neue Räume. Warte kurz." : "Keine Verbindung zum Spielserver.";
         renderTitleError(titleError);
@@ -849,6 +852,5 @@ function tickTimers() {
 }
 setInterval(tickTimers, 250);
 
-// the profile name field is filled on the title screen
-if (!profile.name) profile.name = "";
 render();
+wakeServer();

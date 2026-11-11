@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   return {
     envDir: "..",
     define: { __SERVER_URL__: JSON.stringify(env.VITE_SERVER_URL ?? "") },
-    build: { outDir: "dist", emptyOutDir: true, assetsInlineLimit: 0 },
+    build: { outDir: "../dist", emptyOutDir: true, assetsInlineLimit: 0 },
     server: { strictPort: true },
   };
 });

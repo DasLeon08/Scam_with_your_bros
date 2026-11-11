@@ -15,8 +15,16 @@
     "Tagesquote, Chef-Bewertung und Bro-Shop"
   ],
   "cover_image": "cover.png",
-  "screenshots": ["shots/1.png", "shots/2.png", "shots/3.png", "shots/4.png"],
+  "screenshots": [
+    "shots/1.png",
+    "shots/2.png",
+    "shots/3.png",
+    "shots/4.png"
+  ],
   "multiplayer": true,
   "max_players": 8,
-  "join_param": "room"
+  "join_param": "room",
+  "folder": "dist",
+  "score_order": "high",
+  "score_format": "points"
 }

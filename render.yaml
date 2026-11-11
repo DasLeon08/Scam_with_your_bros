@@ -2,11 +2,11 @@
 # One instance only: rooms live in the server's memory.
 services:
   - type: web
-    name: bros-inc-server
+    name: scam-with-your-bros-server
     runtime: node
     plan: free
     region: frankfurt
-    buildCommand: npm ci --ignore-scripts && npm run build -w server
+    buildCommand: npm ci --ignore-scripts && npm run build:server
     startCommand: npm start
     healthCheckPath: /api/health
     autoDeploy: true
