@@ -1,0 +1,22 @@
+{
+  "title": "Scam with your Bros",
+  "slug": "scam-with-your-bros",
+  "description": "A co-op comedy game for 2–8 players. You work at Bros Inc., the most absurd (and completely fictional) call center in the world. Fictional AI callers phone in with their own personalities and a trust bar. Talk them into the silliest stories (\"Your toaster has a virus!\"), hack their cartoon desktop as a team to dig up useful intel, watch out for the scambaiter who strikes back, hit the daily quota and survive the boss's review. Then spend your Bro-Bucks in the shop. Rooms are private: create one and share the 5-character code.",
+  "description_de": "Koop-Comedy-Spiel für 2–8 Spieler. Ihr arbeitet bei Bros Inc., dem absurdesten (und komplett erfundenen) Callcenter der Welt. Fiktive KI-Anrufer mit eigener Persönlichkeit und Vertrauensbalken rufen an. Überzeugt sie mit den lächerlichsten Geschichten («Ihr Toaster hat einen Virus!»), hackt im Team ihren Comic-Desktop für nützliche Infos, passt auf den Scambaiter auf, der zurückschlägt, knackt die Tagesquote und übersteht die Chef-Bewertung. Danach geht's mit den Bro-Bucks in den Shop. Räume sind privat: Erstelle einen und teile den 5-stelligen Code.",
+  "controls": "Mouse/touch: pick up calls, choose a scheme, hack (tap the codes in order). Keyboard: type your pitch and press Enter. Room code to join.",
+  "category": "other",
+  "engine": "HTML/TypeScript (Vite)",
+  "version": "1.0",
+  "update_title": "Erste Schicht bei Bros Inc.",
+  "notes": [
+    "Private Räume mit 5-stelligem Code für 2 bis 8 Spieler",
+    "5 fiktive Anrufer mit Vertrauensbalken, darunter ein Scambaiter",
+    "Minigame «Fake-Hacking» für Team-Infos",
+    "Tagesquote, Chef-Bewertung und Bro-Shop"
+  ],
+  "cover_image": "cover.png",
+  "screenshots": ["shots/1.png", "shots/2.png", "shots/3.png", "shots/4.png"],
+  "multiplayer": true,
+  "max_players": 8,
+  "join_param": "room"
+}

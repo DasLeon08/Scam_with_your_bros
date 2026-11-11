@@ -75,8 +75,11 @@ export class ScriptedBrain implements CallerBrain {
     const msg = ctx.message.toLowerCase();
     let delta = Math.round(this.random() * 8) - 3; // -3 … +5
 
-    delta += Math.min(2, count(msg, scheme.keywords)) * 4;
-    delta += Math.min(2, count(msg, persona.likes)) * 6;
+    // only words that weren't used before in this call count: repeating the same pitch gets boring
+    const earlier = ctx.history.filter((h) => h.from === "player").map((h) => h.text.toLowerCase()).join(" ");
+    const fresh = (words: string[]) => words.filter((w) => !earlier.includes(w));
+    delta += Math.min(2, count(msg, fresh(scheme.keywords))) * 4;
+    delta += Math.min(2, count(msg, fresh(persona.likes))) * 6;
     delta -= count(msg, persona.dislikes) * 8;
     if (/\b(bitte|danke|gerne|freundlich)\b/.test(msg)) delta += 2;
     if (msg.length < 12) delta -= 3;
