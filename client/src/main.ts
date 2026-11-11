@@ -15,7 +15,7 @@ import {
   type RoomState,
 } from "@bros/shared";
 import * as art from "./art";
-import { Connection, createRoom, inToki, linkCode, tellToki, type Profile } from "./net";
+import { Connection, createRoom, inToki, linkCode, onTokiHost, onTokiName, tellToki, tellTokiScore, type Profile } from "./net";
 
 /* ================================================================== */
 /* state                                                              */
@@ -595,6 +595,7 @@ function mountReview(): Mounted {
     <div class="boss-l"><div class="panel speech" id="speech"></div><div class="boss-portrait">${art.bossBig()}</div></div>
     <div class="panel report" id="report"></div>
   </section>`;
+  if (S?.review) tellTokiScore(S.review.bucks);
   return {
     key: "review",
     update() {
@@ -852,3 +853,20 @@ setInterval(tickTimers, 250);
 // the profile name field is filled on the title screen
 if (!profile.name) profile.name = "";
 render();
+
+// Toki: let Toki open a room for the player and use their Toki name
+onTokiHost(() => {
+  if (S || busy) return;
+  busy = true;
+  renderTitleError("Raum wird erstellt…");
+  createRoom().then((code) => join(code)).catch(() => {
+    busy = false;
+    titleError = "Keine Verbindung zum Spielserver.";
+    renderTitleError(titleError);
+  });
+});
+onTokiName((name) => {
+  profile.name = name.slice(0, 16);
+  saveProfile();
+  if (!S) screen?.update();
+});
