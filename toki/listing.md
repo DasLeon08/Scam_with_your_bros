@@ -11,7 +11,9 @@ Diese Angaben stehen auch maschinenlesbar in `toki.json` (Hauptordner) und werde
 | Highscore | Bro-Bucks des Teams pro Tag, höher ist besser |
 | Engine | HTML/TypeScript (Vite) |
 | Version | 1.0 «Erste Schicht bei Bros Inc.» |
-| Cover | `client/public/cover.png` (1280×720) |
+| Cover (16:9) | `client/public/cover.png` (1280×720) |
+| Titelbild (quadratisch) | `toki/square.png` (1024×1024) |
+| Banner Startseite | `toki/banner.png` (1600×800, 2:1) |
 | Screenshots | `client/public/shots/1.png` bis `4.png`: Lobby, Gespräch, Fake-Hacking, Chef-Bewertung |
 
 ## Beschreibung (Deutsch)
