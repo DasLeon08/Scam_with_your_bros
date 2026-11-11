@@ -141,6 +141,8 @@ export class Connection {
 interface TokiApi {
   room?: (code: string | null) => void;
   score?: (n: number) => void;
+  onHost?: (fn: () => void) => void;
+  onName?: (fn: (n: string) => void) => void;
 }
 
 /** Lets Toki offer "Invite friends" for this room. Joining still needs the code. */
@@ -165,4 +167,25 @@ export function linkCode(): string {
   } catch {
     return "";
   }
+}
+
+/** Reports the team's Bro-Bucks to Toki's leaderboard (higher is better). */
+export function tellTokiScore(n: number) {
+  try {
+    (window as unknown as { toki?: TokiApi }).toki?.score?.(n);
+  } catch {}
+}
+
+/** Lets Toki open a room for the player ("Invite friends" before a room exists). */
+export function onTokiHost(fn: () => void) {
+  try {
+    (window as unknown as { toki?: TokiApi }).toki?.onHost?.(fn);
+  } catch {}
+}
+
+/** Receives the player's Toki name so the game doesn't have to ask. */
+export function onTokiName(fn: (name: string) => void) {
+  try {
+    (window as unknown as { toki?: TokiApi }).toki?.onName?.(fn);
+  } catch {}
 }
