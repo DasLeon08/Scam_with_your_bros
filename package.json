@@ -16,7 +16,8 @@
     "test:e2e": "playwright test --trace off",
     "toki:upload": "node scripts/toki-upload.mjs",
     "start": "npm run start -w server",
-    "build:server": "npm run build -w server"
+    "build:server": "npm run build -w server",
+    "build:toki": "npm run build && node scripts/prepare-toki-build.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

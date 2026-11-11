@@ -147,10 +147,13 @@ npm ci && npm run build:server && npm start
 
 ### 2. Spiel auf Toki (automatisch bei jedem Push)
 
-1. Auf Toki **Spiel hinzufügen → Von GitHub** wählen, dieses Repository und den Branch **`main`** auswählen.
-2. Toki meldet «Quellcode, aber kein Build». Dann **«GitHub Action einrichten»** klicken und den Pull Request
-   von Toki Connect mergen (er legt `.github/workflows/toki.yml` an und braucht keinen Key).
-3. Ab dann baut GitHub bei jedem Push auf `main` das Spiel (`npm ci` und `npm run build` → `dist/`) und stellt es auf Toki.
+Die GitHub Action [`build.yml`](.github/workflows/build.yml) läuft bei jedem Push auf `main`:
+Typecheck, Unit-Tests, der Zwei-Browser-Test und der Build. Den fertigen Build (index.html + toki.json im Hauptordner)
+legt sie in den Branch **`toki-build`**. Bei Pull Requests wird nur getestet und gebaut.
+
+1. Auf Toki **Spiel hinzufügen → Von GitHub** wählen, dieses Repository und den Branch **`toki-build`** auswählen
+   (Ordner leer lassen).
+2. Fertig: Toki übernimmt jeden neuen Build aus `toki-build` automatisch. Du arbeitest normal auf `main`.
 
 Alle Angaben für den Eintrag stehen in [`toki.json`](toki.json) im Hauptordner: Titel, Beschreibung DE/EN,
 Steuerung, Kategorie, Cover, Screenshots, Multiplayer (max. 8), Highscore und Version. `folder: dist` sagt Toki,

@@ -1,0 +1,74 @@
+name: Build
+
+# On every push to main: test, build the game and put the ready-to-play build on the branch
+# "toki-build" (index.html + toki.json in its root). Toki follows that branch ("From GitHub")
+# and puts every new build online by itself. Pull requests are tested and built, not published.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  e2e:
+    # two browser windows play a complete day in one room
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: node scripts/prepare-toki-build.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: game-build
+          path: dist
+      - name: Publish to branch toki-build
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          REPO: ${{ github.repository }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd dist
+          git init -q -b toki-build
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Build from ${GITHUB_SHA::7}: $(printf '%s' "${COMMIT_MSG:-manual run}" | head -n1)"
+          git push -f "https://x-access-token:${TOKEN}@github.com/${REPO}.git" toki-build
