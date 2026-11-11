@@ -1,0 +1,26 @@
+{
+  "name": "scam-with-your-bros",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c magenta,cyan \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w client",
+    "typecheck": "tsc -p shared && tsc -p server && tsc -p client",
+    "test": "vitest run",
+    "test:e2e": "playwright test --trace off",
+    "deploy:server": "npm run deploy -w server",
+    "toki:upload": "node scripts/toki-upload.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "concurrently": "^9.1.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "@bros/client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "vite --port 5173 --host 127.0.0.1", "build": "vite build", "preview": "vite preview --port 4173" },
+  "dependencies": { "@bros/shared": "1.0.0" },
+  "devDependencies": { "vite": "^5.4.11" }
+}

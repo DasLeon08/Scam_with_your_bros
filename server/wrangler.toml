@@ -1,0 +1,21 @@
+name = "bros-inc-server"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]
+
+[vars]
+ALLOWED_ORIGINS = "https://*.playtoki.app,https://playtoki.app,https://toki-ashy.vercel.app,http://localhost:*,http://127.0.0.1:*"
+RATE_LIMIT_PER_MINUTE = "20"
+RATE_LIMIT_PER_ROOM = "400"
+# LLM_BASE_URL, LLM_MODEL and LLM_API_KEY come from .env locally and from
+# `wrangler secret put` in production (see README).
+
+[observability]
+enabled = true
