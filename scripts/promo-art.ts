@@ -1,6 +1,6 @@
 // Renders the Toki banner (1600×800) and the square picture (1024×1024) from the game's own art.
 // Usage: npx tsx scripts/promo-art.ts  → toki/banner.png, toki/square.png
-import { writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium } from "playwright";
 import * as art from "../client/src/art";
@@ -53,17 +53,19 @@ const banner = page(1600, 800, `
   <div class="abs" style="left:1012px;top:712px;font-size:28px;letter-spacing:6px;color:#1f6f6b">CALLCENTER</div>
 `);
 
+// Toki shows the picture cropped to a wide card (about 1.4:1), so everything sits in the middle band
 const square = page(1024, 1024, `
-  <div class="burst" style="width:1700px;height:1700px;left:-338px;top:-420px"></div>
-  <div class="abs" style="left:0;right:0;top:56px;text-align:center">
-    <div class="title" style="font-size:150px">Scam with<span>your Bros</span></div>
+  <div class="burst" style="width:1700px;height:1700px;left:-338px;top:-338px"></div>
+  <div class="abs" style="left:0;right:0;top:200px;text-align:center">
+    <div class="title" style="font-size:112px;-webkit-text-stroke:4px #1b1530;text-shadow:7px 7px 0 #1b1530">Scam with<span>your Bros</span></div>
   </div>
-  <div class="abs" style="left:252px;top:400px">${svg(art.bro("#ffc63b", "cap"), 520)}</div>
-  <div class="abs" style="left:-6px;right:-6px;bottom:54px;height:120px;background:#ff5d8f;border-top:7px solid #1b1530;border-bottom:7px solid #1b1530;
-    display:grid;place-items:center;font-family:Lilita;font-size:72px;color:#fff;text-shadow:5px 5px 0 #1b1530;letter-spacing:4px">BROS INC.</div>
-  <div class="abs" style="left:770px;top:420px;transform:rotate(14deg)">${svg(art.phone(), 190)}</div>
+  <div class="abs" style="left:327px;top:436px">${svg(art.bro("#ffc63b", "cap"), 370)}</div>
+  <div class="abs" style="left:-6px;right:-6px;top:742px;height:92px;background:#ff5d8f;border-top:6px solid #1b1530;border-bottom:6px solid #1b1530;
+    display:grid;place-items:center;font-family:Lilita;font-size:54px;color:#fff;text-shadow:4px 4px 0 #1b1530;letter-spacing:4px">BROS INC.</div>
+  <div class="abs" style="left:690px;top:480px;transform:rotate(14deg)">${svg(art.phone(), 130)}</div>
 `);
 
+mkdirSync(join(root, "toki/art"), { recursive: true });
 const browser = await chromium.launch();
 for (const [name, html, w, h] of [["banner", banner, 1600, 800], ["square", square, 1024, 1024]] as const) {
   const file = join(root, "toki/art", `${name}.html`);
