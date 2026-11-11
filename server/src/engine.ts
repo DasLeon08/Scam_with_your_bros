@@ -114,6 +114,17 @@ export class GameEngine {
     this.bossLine = this.pick(BOSS.lobby);
   }
 
+  /** Swaps how callers answer (e.g. the host added their own AI key). */
+  setBrain(brain: CallerBrain) {
+    this.io.brain = brain;
+    this.touch();
+    this.flush();
+  }
+
+  isHost(id: string) {
+    return id === this.hostId;
+  }
+
   /* ---------------- players ---------------- */
 
   get connectedCount() {

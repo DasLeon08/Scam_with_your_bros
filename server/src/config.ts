@@ -9,6 +9,8 @@ export interface ServerConfig {
   /** Trust X-Forwarded-For (behind Render, Railway, Fly, nginx …). */
   trustProxy: boolean;
   env: Record<string, string | undefined>;
+  /** For tests: how the server talks to the AI endpoint. */
+  fetchFn?: typeof fetch;
 }
 
 export const DEFAULT_ORIGINS =

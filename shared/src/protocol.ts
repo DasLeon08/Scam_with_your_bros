@@ -156,6 +156,7 @@ export type ClientMsg =
   | { t: "vote"; itemId: string }
   | { t: "buy"; itemId: string }
   | { t: "nextDay" }
+  | { t: "aiKey"; key: string | null; model?: string }
   | { t: "ping"; c: number };
 
 export type GameEvent =
@@ -166,7 +167,8 @@ export type GameEvent =
   | { kind: "intel"; callId: string; playerId: string; label: string }
   | { kind: "missed"; name: string }
   | { kind: "bought"; itemId: string }
-  | { kind: "filtered" };
+  | { kind: "filtered" }
+  | { kind: "aiKey"; ok: boolean; reason?: "bad_key" | "unreachable" | "not_host" | "bad_format" };
 
 export type ServerMsg =
   | { t: "welcome"; you: string; token: string; state: RoomState }

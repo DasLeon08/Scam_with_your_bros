@@ -15,6 +15,7 @@ import {
   type RoomState,
 } from "@bros/shared";
 import * as art from "./art";
+import { DEFAULT_MODEL, KEY_RE, clearAiSettings, loadAiSettings, maskKey, saveAiSettings, type AiSettings } from "./keystore";
 import { Connection, createRoom, inToki, linkCode, onTokiHost, onTokiName, tellToki, tokiScore, wakeServer, type Profile } from "./net";
 
 /* ================================================================== */
@@ -30,6 +31,10 @@ let busy = false;
 let lastCallId: string | null = null;
 let resultCall: CallView | null = null;
 let nameTouched = false;
+let aiSettings: AiSettings | null = null;
+/** Room + host term the own key was sent for, so it goes once per room as host. */
+let keySentFor = "";
+let aiChecking = false;
 let scored = "";
 const invited = normalizeCode(linkCode());
 
@@ -106,10 +111,13 @@ function join(code: string) {
       titleError = "";
       tellToki(state.code);
       render();
+      keySentFor = ""; // a (re)connect: the server forgot the key when the connection dropped
+      maybeSendKey();
     },
     onState(state) {
       S = state;
       render();
+      maybeSendKey();
     },
     onEvent: onEvent,
     onError(code) {
@@ -146,6 +154,19 @@ async function createAndJoin() {
   }
 }
 
+function maybeSendKey() {
+  if (!S || !aiSettings) return;
+  const term = `${S.code}:${isHost()}`;
+  if (!isHost()) {
+    keySentFor = term;
+    return;
+  }
+  if (keySentFor === term) return;
+  keySentFor = term;
+  aiChecking = true;
+  send({ t: "aiKey", key: aiSettings.key, model: aiSettings.model });
+}
+
 function leave(error = "") {
   conn?.close();
   conn = null;
@@ -153,6 +174,7 @@ function leave(error = "") {
   me = "";
   lastCallId = null;
   resultCall = null;
+  keySentFor = "";
   titleError = error;
   tellToki(null);
   render();
@@ -190,6 +212,20 @@ function onEvent(e: GameEvent) {
     case "filtered":
       toast("🚫 Links, Codes und Nummern sind im Chat nicht erlaubt.", "bad");
       break;
+    case "aiKey": {
+      aiChecking = false;
+      const msg = e.ok
+        ? "🤖 KI-Anrufer sind an: Dein eigener Key wird für diesen Raum benutzt."
+        : {
+            bad_key: "OpenAI hat den Key abgelehnt. Die Skript-Anrufer übernehmen.",
+            unreachable: "OpenAI ist gerade nicht erreichbar. Die Skript-Anrufer übernehmen.",
+            bad_format: "Das sieht nicht wie ein OpenAI-Key aus (sk-…).",
+            not_host: "Nur der Host kann die KI-Anrufer einschalten.",
+          }[e.reason ?? "unreachable"];
+      toast(msg, e.ok ? "good" : "bad");
+      setAiStatus(msg, !e.ok);
+      break;
+    }
   }
 }
 
@@ -244,6 +280,7 @@ function mountTitle(): Mounted {
       <input id="code" class="input code-in" maxlength="5" placeholder="CODE" value="${esc(linkCode())}" aria-label="Raumcode">
       <button type="submit" class="btn ${invited ? "pink" : ""}" id="join-btn">${invited ? `Raum ${invited} beitreten` : "Beitreten"}</button>
       <div class="err" id="title-err" role="status"></div>
+      <button type="button" class="btn ghost sm" data-act="aisettings" id="ai-btn">🤖 KI-Anrufer: <span id="ai-label">…</span></button>
     </form>
   </section>`;
   const codeIn = $<HTMLInputElement>("#code")!;
@@ -260,6 +297,8 @@ function mountTitle(): Mounted {
       $("#colors")!.innerHTML = COLORS.map((c) => `<button type="button" data-act="color" data-v="${c}" class="${c === profile.color ? "sel" : ""}" style="background:${c}" aria-label="Farbe ${c}"></button>`).join("");
       $("#hairs")!.innerHTML = HAIRS.map((h) => `<button type="button" data-act="hair" data-v="${h}" class="${h === profile.hair ? "sel" : ""}" aria-label="Frisur ${h}">${art.bro(profile.color, h, 40)}</button>`).join("");
       renderTitleError(titleError);
+      const label = $("#ai-label");
+      if (label) label.textContent = aiSettings ? "eigener OpenAI-Key" : "Skript (gratis)";
     },
   };
 }
@@ -298,7 +337,7 @@ function mountLobby(): Mounted {
   stage.innerHTML = `
   <section class="screen lobby">
     <div class="panel codebox">
-      <div class="row"><h2 style="font-size:30px">Dein Raum</h2><span class="chip aibadge" id="aimode" style="margin-left:auto"></span></div>
+      <div class="row"><h2 style="font-size:30px">Dein Raum</h2><button class="chip aibadge" id="aimode" data-act="aisettings" style="margin-left:auto" title="KI-Einstellungen"></button></div>
       <div class="code-big" id="code-big"></div>
       <div class="row"><button class="btn ghost sm" data-act="copy">📋 Code kopieren</button><button class="btn ghost sm" data-act="leave">🚪 Verlassen</button></div>
       <p class="hint">${inToki ? "Teile den Code oder nutze «Invite friends» auf Toki. " : ""}Freunde treten nur mit diesem Code bei. Es gibt keine öffentlichen Räume und kein Matchmaking.</p>
@@ -318,7 +357,7 @@ function mountLobby(): Mounted {
     update() {
       const s = S!;
       $("#code-big")!.textContent = s.code;
-      $("#aimode")!.textContent = s.ai ? "🤖 KI-Anrufer" : "📜 Skript-Anrufer";
+      $("#aimode")!.textContent = `${s.ai ? "🤖 KI-Anrufer" : "📜 Skript-Anrufer"} ⚙️`;
       const online = s.players.filter((p) => p.connected);
       $("#count")!.textContent = `${online.length} / ${RULES.maxPlayers}`;
       const cards = online.map(
@@ -687,6 +726,69 @@ function mountShop(): Mounted {
   };
 }
 
+/* ---------------- AI settings ---------------- */
+
+function setAiStatus(text: string, bad = false) {
+  const el = $("#ai-status");
+  if (el) {
+    el.textContent = text;
+    el.style.color = bad ? "var(--red)" : "var(--teal)";
+  }
+}
+
+function showAiSettings() {
+  const box = $("#overlay");
+  if (!box) return;
+  const inRoom = !!S;
+  box.innerHTML = `<div class="overlay"><div class="dim" data-act="aiclose"></div>
+    <form class="panel modal" data-form="ai" autocomplete="off" style="text-align:left">
+      <h2 style="font-size:28px">🤖 KI-Anrufer</h2>
+      <p style="font-size:14px">Optional. <b>Ohne Key</b> antworten Skript-Anrufer, gratis und immer verfügbar.
+        <b>Mit deinem eigenen OpenAI-Key</b> antworten die Anrufer mit KI. Die Kosten gehen auf dein OpenAI-Konto
+        (mit ${DEFAULT_MODEL} meist nur Rappen pro Spieltag).</p>
+      <p class="hint" style="font-size:12px">🔒 Der Key bleibt auf diesem Gerät. Er geht nur an den Spielserver und nur für deinen Raum,
+        wenn du Host bist. Er geht nie an Mitspieler und wird nicht in dein Toki-Konto synchronisiert.</p>
+      ${aiSettings
+        ? `<div class="chip" style="align-self:flex-start">Gespeichert: ${esc(maskKey(aiSettings.key))} · ${esc(aiSettings.model)}</div>`
+        : ""}
+      <label class="hint" for="ai-key" style="font-weight:900">OpenAI-API-Key</label>
+      <input id="ai-key" class="input" type="password" placeholder="${aiSettings ? "neuen Key eintragen, um zu ersetzen" : "sk-…"}" spellcheck="false" style="font-size:16px">
+      <label class="hint" for="ai-model" style="font-weight:900">Modell</label>
+      <input id="ai-model" class="input" value="${esc(aiSettings?.model ?? DEFAULT_MODEL)}" spellcheck="false" style="font-size:16px">
+      <div class="err" id="ai-status" role="status">${aiChecking ? "Key wird geprüft…" : inRoom && !isHost() ? "Dein Key wird benutzt, sobald du Host eines Raums bist." : ""}</div>
+      <div class="row" style="justify-content:flex-end; flex-wrap:wrap">
+        ${aiSettings ? `<button type="button" class="btn ghost sm" data-act="aiclear">Key entfernen</button>` : ""}
+        <button type="button" class="btn ghost sm" data-act="aiclose">Schliessen</button>
+        <button class="btn pink sm">Speichern</button>
+      </div>
+    </form></div>`;
+  setTimeout(() => $<HTMLInputElement>("#ai-key")?.focus(), 0);
+}
+
+async function saveAiFromForm() {
+  const key = $<HTMLInputElement>("#ai-key")!.value.trim();
+  const model = $<HTMLInputElement>("#ai-model")!.value.trim() || DEFAULT_MODEL;
+  if (!key && aiSettings) {
+    aiSettings = { ...aiSettings, model };
+  } else if (!KEY_RE.test(key)) {
+    setAiStatus("Das sieht nicht wie ein OpenAI-Key aus. Er beginnt mit sk-.", true);
+    return;
+  } else {
+    aiSettings = { key, model };
+  }
+  await saveAiSettings(aiSettings);
+  $<HTMLInputElement>("#ai-key")!.value = "";
+  keySentFor = "";
+  if (S && isHost()) {
+    setAiStatus("Gespeichert. Key wird bei OpenAI geprüft…");
+    maybeSendKey();
+  } else {
+    setAiStatus("Gespeichert. Er wird benutzt, sobald du einen Raum hostest.");
+    setTimeout(() => ($("#overlay")!.innerHTML = ""), 1200);
+  }
+  screen?.update();
+}
+
 /* ---------------- scambaiter overlay ---------------- */
 
 function showBaiter(name: string, penalty: number, victim: string) {
@@ -809,6 +911,21 @@ stage.addEventListener("click", async (e) => {
     case "unbait":
       $("#overlay")!.innerHTML = "";
       break;
+    case "aisettings":
+      showAiSettings();
+      break;
+    case "aiclose":
+      $("#overlay")!.innerHTML = "";
+      break;
+    case "aiclear":
+      await clearAiSettings();
+      aiSettings = null;
+      if (S && isHost()) send({ t: "aiKey", key: null });
+      keySentFor = "";
+      $("#overlay")!.innerHTML = "";
+      toast("Key entfernt. Skript-Anrufer übernehmen.", "good");
+      screen?.update();
+      break;
   }
 });
 
@@ -835,6 +952,9 @@ stage.addEventListener("submit", (e) => {
       input.value = "";
       break;
     }
+    case "ai":
+      void saveAiFromForm();
+      break;
     case "say": {
       const input = $<HTMLInputElement>("#say")!;
       const call = myCall();
@@ -868,6 +988,11 @@ setInterval(tickTimers, 250);
 
 render();
 wakeServer();
+loadAiSettings().then((v) => {
+  aiSettings = v;
+  screen?.update();
+  maybeSendKey();
+});
 
 // Toki: "Invite friends" before a room exists opens one; the Toki name fills in the name field
 onTokiHost(() => void createAndJoin());

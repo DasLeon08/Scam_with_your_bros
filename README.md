@@ -26,15 +26,24 @@ keine echten Firmen, keine echten Methoden, kein Echtgeld.
 **Anrufer:** Gustav Grummelbart (Leuchtturmwärter), Kiki Sternschnuppe (Influencerin), Prof. Dr. Balduin Knopf
 (Knopfforscher), Wilma Wirbelwind (Rennschnecken-Trainerin) und Herr Blümchen (Scambaiter).
 
-## KI-Anrufer: Skript oder OpenAI
+## KI-Anrufer: Skript oder eigener OpenAI-Key
 
-Die Anrufer antworten **entweder per Skript** (ohne Konfiguration, kostet nichts) **oder per KI**.
-Die Einstellung steht nur in der `.env` bzw. in den Server-Secrets. **Der Key kommt nie in den Browser:**
-Alle Anfragen laufen über den Spielserver.
+Die Anrufer antworten **per Skript** (Standard, gratis, ohne Einrichtung) **oder per KI**.
 
-| Was in `.env` steht | Anrufer |
+**Eigener Key im Spiel (empfohlen):** Auf dem Titelscreen oder in der Lobby auf **«🤖 KI-Anrufer»** klicken
+und einmal den eigenen OpenAI-Key eintragen. Das Modell ist standardmässig `gpt-4o-mini`.
+- Der Key bleibt **auf dem Gerät des Spielers**, in IndexedDB. Absichtlich nicht in `localStorage`,
+  weil Toki das in die Toki-Konten synchronisiert.
+- Wer Host ist, schickt ihn einmal an den Spielserver. Der prüft ihn bei OpenAI und nutzt ihn **nur für diesen Raum,
+  nur im Arbeitsspeicher**. Der Key wird nicht gespeichert und nicht geloggt und nie an Mitspieler oder zurück an Browser geschickt.
+- Verlässt der Key-Besitzer den Raum, schaltet der Raum sofort auf die Skript-Anrufer zurück.
+- Die Kosten gehen auf das OpenAI-Konto des Hosts.
+
+**Optional ein Key für alle auf dem Server** (gilt, wenn der Host keinen eigenen hat):
+
+| Was in `.env` bzw. den Server-Einstellungen steht | Anrufer |
 | --- | --- |
-| nichts | Skript-Anrufer |
+| nichts | Skript-Anrufer (bzw. der eigene Key des Hosts) |
 | `OPENAI_API_KEY=sk-…` | OpenAI, Modell `gpt-4o-mini` (mit `LLM_MODEL` änderbar) |
 | `LLM_BASE_URL=…` (+ `LLM_API_KEY`, `LLM_MODEL`) | eigener OpenAI-kompatibler Endpunkt, z. B. LiteLLM oder Ollama |
 
@@ -125,7 +134,7 @@ Colyseus wäre ein grösseres Framework für dasselbe, PartyKit läuft auf Cloud
 **Variante A: Render (gratis, ohne Kommandozeile)**
 1. Auf [render.com](https://render.com) einloggen → **New → Blueprint** → dieses GitHub-Repository wählen.
    Render liest [`render.yaml`](render.yaml) und legt den Dienst `bros-inc-server` an.
-2. Bei `OPENAI_API_KEY` deinen OpenAI-Key eintragen (oder leer lassen für Skript-Anrufer).
+2. `OPENAI_API_KEY` kannst du leer lassen: Jeder Host kann seinen eigenen Key im Spiel eintragen.
    Für LiteLLM stattdessen `LLM_BASE_URL`, `LLM_API_KEY` und `LLM_MODEL` setzen.
 3. Nach dem Deploy steht die Adresse oben, normalerweise `https://scam-with-your-bros-server.onrender.com`.
    Das ist dieselbe Adresse wie in `.env.production`. Weicht sie ab, trägst du sie dort ein.

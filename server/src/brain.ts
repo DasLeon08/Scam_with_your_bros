@@ -54,6 +54,24 @@ export function llmConfigFromEnv(env: Record<string, unknown>): LlmConfig | null
   };
 }
 
+/** OpenAI keys look like sk-… (also sk-proj-…). */
+export const OPENAI_KEY_RE = /^sk-[A-Za-z0-9_-]{20,200}$/;
+
+/** Checks a key with OpenAI's cheapest call (list models). */
+export async function verifyOpenAiKey(key: string, fetchFn: typeof fetch = fetch, baseUrl = OPENAI_BASE_URL): Promise<"ok" | "bad_key" | "unreachable"> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const res = await fetchFn(`${baseUrl}/models`, { headers: { authorization: `Bearer ${key}` }, signal: ctrl.signal });
+    if (res.ok) return "ok";
+    return res.status === 401 || res.status === 403 ? "bad_key" : "unreachable";
+  } catch {
+    return "unreachable";
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 const pick = <T>(arr: T[], r: () => number) => arr[Math.floor(r() * arr.length) % arr.length];
 const count = (text: string, words: string[]) => words.filter((w) => text.includes(w)).length;

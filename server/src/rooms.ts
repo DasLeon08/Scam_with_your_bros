@@ -1,5 +1,5 @@
 import { CLOSE, randomCode, type ClientMsg, type ServerMsg } from "@bros/shared";
-import { HybridBrain, LlmBrain, RoomLimiter, ScriptedBrain, llmConfigFromEnv } from "./brain";
+import { DEFAULT_MODEL, HybridBrain, LlmBrain, OPENAI_BASE_URL, OPENAI_KEY_RE, RoomLimiter, ScriptedBrain, llmConfigFromEnv, verifyOpenAiKey, type LlmConfig } from "./brain";
 import type { ServerConfig } from "./config";
 import { GameEngine } from "./engine";
 
@@ -29,15 +29,16 @@ export class Room {
   private timer: ReturnType<typeof setInterval>;
   private expiry: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(readonly code: string, cfg: ServerConfig, private onGone: (code: string) => void) {
-    const llm = llmConfigFromEnv(cfg.env);
-    const brain = new HybridBrain(
-      llm ? new LlmBrain(llm) : null,
-      new ScriptedBrain(),
-      new RoomLimiter(cfg.rateLimitPerMinute, cfg.rateLimitPerRoom),
-      Date.now,
-      (m) => console.warn(`[${code}] ${m}`),
-    );
+  private limiter: RoomLimiter;
+  /** The player whose own key the room uses right now. */
+  private keyOwner: string | null = null;
+  private serverLlm: LlmConfig | null;
+
+  constructor(readonly code: string, private cfg: ServerConfig, private onGone: (code: string) => void) {
+    this.serverLlm = llmConfigFromEnv(cfg.env);
+    // one limit per room, also when the host swaps in their own key
+    this.limiter = new RoomLimiter(cfg.rateLimitPerMinute, cfg.rateLimitPerRoom);
+    const brain = this.makeBrain(this.serverLlm);
     this.engine = new GameEngine(code, {
       now: Date.now,
       random: Math.random,
@@ -48,6 +49,36 @@ export class Room {
     });
     this.timer = setInterval(() => this.engine.tick(), 1000);
     this.expireIn(CREATE_TTL);
+  }
+
+  private makeBrain(llm: LlmConfig | null) {
+    return new HybridBrain(llm ? new LlmBrain(llm, this.cfg.fetchFn) : null, new ScriptedBrain(), this.limiter, Date.now, (m) =>
+      console.warn(`[${this.code}] ${m}`),
+    );
+  }
+
+  /**
+   * The host's own OpenAI key for this room. It lives only in this room's memory: never stored,
+   * never logged, never sent to other players. null switches back to the server's setting.
+   */
+  private async setRoomKey(conn: Conn, rawKey: unknown, rawModel: unknown) {
+    const reply = (ok: boolean, reason?: "bad_key" | "unreachable" | "not_host" | "bad_format") =>
+      this.send(conn, { t: "event", event: { kind: "aiKey", ok, reason } });
+    if (!conn.playerId || !this.engine.isHost(conn.playerId)) return reply(false, "not_host");
+    if (rawKey === null) {
+      this.keyOwner = null;
+      this.engine.setBrain(this.makeBrain(this.serverLlm));
+      return reply(true);
+    }
+    const key = typeof rawKey === "string" ? rawKey.trim() : "";
+    if (!OPENAI_KEY_RE.test(key)) return reply(false, "bad_format");
+    const model = typeof rawModel === "string" && /^[A-Za-z0-9._:\/-]{1,64}$/.test(rawModel.trim()) ? rawModel.trim() : DEFAULT_MODEL;
+    const check = await verifyOpenAiKey(key, this.cfg.fetchFn);
+    if (check !== "ok") return reply(false, check);
+    if (!this.conns.has(conn)) return; // left while the key was checked
+    this.keyOwner = conn.playerId;
+    this.engine.setBrain(this.makeBrain({ baseUrl: OPENAI_BASE_URL, apiKey: key, model, temperature: 0.9, timeoutMs: 15000 }));
+    reply(true);
   }
 
   get size() {
@@ -82,6 +113,10 @@ export class Room {
       this.send(conn, { t: "pong", c: Number(msg.c) || 0, now: Date.now() });
       return;
     }
+    if (msg.t === "aiKey") {
+      this.setRoomKey(conn, msg.key, msg.model).catch(() => {});
+      return;
+    }
     if (msg.t === "hello") {
       if (conn.playerId) return;
       const seat = this.engine.join(msg);
@@ -111,6 +146,11 @@ export class Room {
   close(conn: Conn) {
     if (!this.conns.delete(conn)) return;
     if (conn.playerId) this.engine.disconnect(conn.playerId);
+    // the key's owner left: stop spending their key
+    if (conn.playerId && conn.playerId === this.keyOwner) {
+      this.keyOwner = null;
+      this.engine.setBrain(this.makeBrain(this.serverLlm));
+    }
     if (this.conns.size === 0) this.expireIn(EMPTY_TTL);
   }
 
