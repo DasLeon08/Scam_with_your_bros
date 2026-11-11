@@ -15,7 +15,7 @@ import {
   type RoomState,
 } from "@bros/shared";
 import * as art from "./art";
-import { Connection, createRoom, inToki, linkCode, tellToki, wakeServer, type Profile } from "./net";
+import { Connection, createRoom, inToki, linkCode, onTokiHost, onTokiName, tellToki, tokiScore, wakeServer, type Profile } from "./net";
 
 /* ================================================================== */
 /* state                                                              */
@@ -29,6 +29,9 @@ let titleError = "";
 let busy = false;
 let lastCallId: string | null = null;
 let resultCall: CallView | null = null;
+let nameTouched = false;
+let scored = "";
+const invited = normalizeCode(linkCode());
 
 const PROFILE_KEY = "bros.profile";
 function loadProfile(): Profile {
@@ -125,6 +128,24 @@ function join(code: string) {
   });
 }
 
+/** Opens a new room and joins it as host (the "Raum erstellen" button and Toki's "Invite friends"). */
+async function createAndJoin() {
+  if (busy || S) return;
+  busy = true;
+  renderTitleError("Raum wird erstellt…");
+  const slow = setTimeout(() => busy && renderTitleError("Der Spielserver wacht gerade auf. Das kann bis zu einer Minute dauern…"), 4000);
+  try {
+    const code = await createRoom();
+    clearTimeout(slow);
+    join(code);
+  } catch (err) {
+    clearTimeout(slow);
+    busy = false;
+    titleError = (err as Error).message === "rate_limited" ? "Zu viele neue Räume. Warte kurz." : "Keine Verbindung zum Spielserver.";
+    renderTitleError(titleError);
+  }
+}
+
 function leave(error = "") {
   conn?.close();
   conn = null;
@@ -213,20 +234,23 @@ function mountTitle(): Mounted {
       <div class="building">${art.building()}</div>
     </div>
     <form class="panel join-card" data-form="join" autocomplete="off">
+      ${invited ? `<div class="invite">💌 Du bist in Raum <b>${invited}</b> eingeladen!</div>` : ""}
       <label for="name">Dein Name</label>
       <input id="name" class="input" maxlength="16" placeholder="z. B. Leon" value="${esc(profile.name)}">
       <label>Dein Bro</label>
       <div class="colors" id="colors"></div><div class="hairs" id="hairs"></div>
-      <button type="button" class="btn pink" data-act="create">📞 Raum erstellen</button>
+      <button type="button" class="btn ${invited ? "ghost" : "pink"}" data-act="create">📞 ${invited ? "Lieber eigenen Raum erstellen" : "Raum erstellen"}</button>
       <div class="or">– oder mit Code beitreten –</div>
       <input id="code" class="input code-in" maxlength="5" placeholder="CODE" value="${esc(linkCode())}" aria-label="Raumcode">
-      <button type="submit" class="btn">Beitreten</button>
+      <button type="submit" class="btn ${invited ? "pink" : ""}" id="join-btn">${invited ? `Raum ${invited} beitreten` : "Beitreten"}</button>
       <div class="err" id="title-err" role="status"></div>
     </form>
   </section>`;
   const codeIn = $<HTMLInputElement>("#code")!;
   codeIn.addEventListener("input", () => (codeIn.value = codeIn.value.toUpperCase().replace(/[^A-Z0-9]/g, "")));
+  if (invited) setTimeout(() => $<HTMLButtonElement>("#join-btn")?.focus(), 0);
   $<HTMLInputElement>("#name")!.addEventListener("input", (e) => {
+    nameTouched = true;
     profile.name = (e.target as HTMLInputElement).value.slice(0, 16);
     saveProfile();
   });
@@ -599,6 +623,10 @@ function mountReview(): Mounted {
     key: "review",
     update() {
       const r = S!.review!;
+      if (scored !== `${S!.code}:${r.day}`) {
+        scored = `${S!.code}:${r.day}`;
+        tokiScore(r.bucks);
+      }
       $("#speech")!.textContent = `«${r.line}»`;
       $("#report")!.innerHTML = `
         <div class="row" style="gap:16px">
@@ -709,23 +737,9 @@ stage.addEventListener("click", async (e) => {
       saveProfile();
       screen?.update();
       break;
-    case "create": {
-      if (busy) return;
-      busy = true;
-      renderTitleError("Raum wird erstellt…");
-      const slow = setTimeout(() => busy && renderTitleError("Der Spielserver wacht gerade auf. Das kann bis zu einer Minute dauern…"), 4000);
-      try {
-        const code = await createRoom();
-        clearTimeout(slow);
-        join(code);
-      } catch (err) {
-        clearTimeout(slow);
-        busy = false;
-        titleError = (err as Error).message === "rate_limited" ? "Zu viele neue Räume. Warte kurz." : "Keine Verbindung zum Spielserver.";
-        renderTitleError(titleError);
-      }
+    case "create":
+      await createAndJoin();
       break;
-    }
     case "copy":
       try {
         await navigator.clipboard.writeText(S!.code);
@@ -854,3 +868,13 @@ setInterval(tickTimers, 250);
 
 render();
 wakeServer();
+
+// Toki: "Invite friends" before a room exists opens one; the Toki name fills in the name field
+onTokiHost(() => void createAndJoin());
+onTokiName((name) => {
+  if (nameTouched) return;
+  profile.name = name.slice(0, 16);
+  saveProfile();
+  const field = $<HTMLInputElement>("#name");
+  if (field) field.value = profile.name;
+});

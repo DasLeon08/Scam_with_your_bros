@@ -85,8 +85,11 @@ Unit-Tests: Filter, Raumcodes, LLM-Anbindung inklusive Fallback und Rate-Limit s
 npm run test:e2e
 ```
 
-Ein Playwright-Test öffnet **zwei Browserfenster im selben Raum** und spielt einen **kompletten Spieltag** durch:
-Raum per Code, falscher Code wird abgelehnt, Chat-Filter, Anrufe, Hacking, Quote, Chef-Bewertung, Shop und Start von Tag 2.
+Zwei Playwright-Tests:
+- **Zwei Browserfenster im selben Raum** spielen einen **kompletten Spieltag** durch: Raum per Code, falscher Code
+  wird abgelehnt, Chat-Filter, Anrufe, Hacking, Quote, Chef-Bewertung, Shop und Start von Tag 2.
+- **Im Toki-Rahmen:** Eine nachgebaute Toki-Seite bettet das Spiel ein wie Toki und prüft Name, «Freunde einladen»,
+  Einladungslink, Raumcode-Meldung und Highscore.
 
 ## Architektur
 
@@ -107,9 +110,13 @@ Er läuft lokal, per Docker auf jedem VPS oder bei Render, Railway oder Fly.io. 
 betreiben, weil die Räume im Speicher liegen. Für ein Partyspiel mit Raumcodes ist das genau richtig.
 Colyseus wäre ein grösseres Framework für dasselbe, PartyKit läuft auf Cloudflare.
 
-**Toki-Anbindung:** `toki-save.js` ist eingebunden. Im Raum ruft das Spiel `toki.room(code)` auf, dann bietet
-Toki «Invite friends» an. Eine Einladung öffnet das Spiel mit `?room=CODE`. Das füllt **nur das Code-Feld vor**,
-beitreten muss man trotzdem selbst über den Code.
+**Toki-Anbindung** (`toki-save.js`, immer die aktuelle Version von playtoki.app):
+- `toki.room(code)` im Raum, `toki.room(null)` beim Verlassen → Toki zeigt «Freunde einladen».
+- `toki.onHost`: Wer auf Toki «Freunde einladen» drückt, bevor ein Raum offen ist, bekommt direkt einen neuen Raum.
+- `toki.onName`: Der Toki-Name steht automatisch im Namensfeld (bis man selbst etwas eintippt).
+- Einladungslink `?room=CODE`: Der Code ist vorausgefüllt, ein Klick auf «Raum CODE beitreten» genügt. Beitreten geht immer nur über den Code.
+- `toki.score(bucks)`: Die Bro-Bucks des Teams am Tagesende kommen auf die Toki-Rangliste (höher ist besser).
+- Speichern (Name, Farbe) läuft über `localStorage`, Toki synchronisiert das selbst.
 
 ## Deployment
 

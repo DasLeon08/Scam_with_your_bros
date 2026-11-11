@@ -146,12 +146,37 @@ export class Connection {
 interface TokiApi {
   room?: (code: string | null) => void;
   score?: (n: number) => void;
+  onHost?: (fn: () => void) => void;
+  onName?: (fn: (name: string) => void) => void;
+  name?: string | null;
+}
+const toki = () => (window as unknown as { toki?: TokiApi }).toki;
+
+/** Puts the team's Bro-Bucks of a day on the game's Toki leaderboard (higher is better). */
+export function tokiScore(points: number) {
+  try {
+    toki()?.score?.(points);
+  } catch {}
+}
+
+/** Toki's "Invite friends" before a room is open: Toki asks the game to open one. */
+export function onTokiHost(fn: () => void) {
+  try {
+    toki()?.onHost?.(fn);
+  } catch {}
+}
+
+/** The name the player goes by on Toki (now if known, and again when it changes). */
+export function onTokiName(fn: (name: string) => void) {
+  try {
+    toki()?.onName?.(fn);
+  } catch {}
 }
 
 /** Lets Toki offer "Invite friends" for this room. Joining still needs the code. */
 export function tellToki(code: string | null) {
   try {
-    (window as unknown as { toki?: TokiApi }).toki?.room?.(code);
+    toki()?.room?.(code);
   } catch {}
 }
 
@@ -163,7 +188,7 @@ export const inToki = (() => {
   }
 })();
 
-/** A room code in the address (?room=K7QX2), e.g. from a Toki invite. It only fills in the field. */
+/** A room code in the address (?room=K7QX2) from a Toki invite. It fills in the field; the player joins with one click. */
 export function linkCode(): string {
   try {
     return (new URLSearchParams(location.search).get("room") ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5);

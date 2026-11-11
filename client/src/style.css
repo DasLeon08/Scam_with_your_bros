@@ -72,6 +72,7 @@ button.chip.on { background: var(--mustard); }
 .tagline { margin-top: 28px; font-size: 22px; font-weight: 900; color: #fff; text-shadow: 2px 2px 0 var(--ink); max-width: 560px; }
 .building { margin-top: 22px; height: 170px; }
 .join-card { padding: 24px 28px; display: flex; flex-direction: column; gap: 12px; }
+.invite { border: 3px dashed var(--ink); border-radius: 12px; background: var(--mint); padding: 8px 12px; font-weight: 900; text-align: center; }
 .join-card label { font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; }
 .code-in { font-family: "Lilita"; font-size: 34px; letter-spacing: 12px; text-align: center; text-transform: uppercase; }
 .or { text-align: center; font-weight: 900; color: #8a7a5a; }
