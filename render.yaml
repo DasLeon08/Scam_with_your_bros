@@ -1,0 +1,27 @@
+# Render Blueprint: Dashboard → New → Blueprint → pick this repository.
+# One instance only: rooms live in the server's memory.
+services:
+  - type: web
+    name: bros-inc-server
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci --ignore-scripts && npm run build -w server
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NO_DOTENV
+        value: "1"
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        value: gpt-4o-mini
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "20"
+      - key: RATE_LIMIT_PER_ROOM
+        value: "400"
+      - key: ALLOWED_ORIGINS
+        value: https://*.playtoki.app,https://playtoki.app,https://toki-ashy.vercel.app

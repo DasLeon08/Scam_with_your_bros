@@ -71,7 +71,7 @@ npm run dev
 ```
 
 Danach <http://127.0.0.1:5173> in zwei Browserfenstern öffnen: Im einen einen Raum erstellen, im anderen mit dem Code beitreten.
-Der Spielserver läuft lokal auf `http://127.0.0.1:8787` (Wrangler, also dieselbe Laufzeit wie später bei Cloudflare).
+Der Spielserver (Node.js) läuft lokal auf `http://127.0.0.1:8787` und liest die `.env` im Projektordner.
 
 ## Tests
 
@@ -92,18 +92,20 @@ Raum per Code, falscher Code wird abgelehnt, Chat-Filter, Anrufe, Hacking, Quote
 
 ```
 client/   Vite + TypeScript, ohne Framework. Statischer Build für Toki (1280×720-Bühne, skaliert)
-server/   Cloudflare Worker + Durable Object «Room», ein Objekt pro Raumcode
+server/   Node.js-Server (HTTP + WebSocket mit `ws`), ein Room-Objekt pro Raumcode im Speicher
 shared/   Protokoll, Spielinhalte (Anrufer, Maschen, Shop), Regeln, Filter
 tests/    Vitest (unit) und Playwright (e2e)
 scripts/  .env-Sync, Toki-Upload, Screenshots
 toki/     Store-Texte für Toki (DE/EN)
 ```
 
-**Warum Cloudflare Durable Objects:** Toki hostet Spiele statisch (R2, `<slug>.playtoki.app`), und Vercel-Functions
-können keine WebSockets offen halten. Ein Durable Object pro Raumcode ist ein kleiner Server pro Runde:
-Er hält den Spielzustand, entscheidet alles selbst (die Clients können nicht schummeln), macht das Rate-Limit
-pro Raum und ist zugleich der KI-Proxy. Es gibt keinen eigenen Server zu betreiben, und der Gratis-Plan reicht.
-Apex auf Toki nutzt dasselbe Muster (Worker-Relay mit Raumcode).
+**Warum ein eigener Node.js-WebSocket-Server:** Toki hostet Spiele nur statisch (`<slug>.playtoki.app`), und
+Vercel-Functions können keine WebSockets offen halten. Ein Echtzeit-Server muss also separat laufen. Der Server hier
+ist ein einziger Node-Prozess ohne Datenbank und ohne Anbieter-Bindung. Er hält jeden Raum im Speicher, entscheidet
+alles selbst (die Clients können nicht schummeln), macht das Rate-Limit pro Raum und ist zugleich der KI-Proxy.
+Er läuft lokal, per Docker auf jedem VPS oder bei Render, Railway oder Fly.io. Wichtig: **genau eine Instanz**
+betreiben, weil die Räume im Speicher liegen. Für ein Partyspiel mit Raumcodes ist das genau richtig.
+Colyseus wäre ein grösseres Framework für dasselbe, PartyKit läuft auf Cloudflare.
 
 **Toki-Anbindung:** `toki-save.js` ist eingebunden. Im Raum ruft das Spiel `toki.room(code)` auf, dann bietet
 Toki «Invite friends» an. Eine Einladung öffnet das Spiel mit `?room=CODE`. Das füllt **nur das Code-Feld vor**,
@@ -111,31 +113,43 @@ beitreten muss man trotzdem selbst über den Code.
 
 ## Deployment
 
-### 1. Spielserver (Cloudflare)
+### 1. Spielserver
+
+**Variante A: Render (gratis, ohne Kommandozeile)**
+1. Auf [render.com](https://render.com) einloggen → **New → Blueprint** → dieses GitHub-Repository wählen.
+   Render liest [`render.yaml`](render.yaml) und legt den Dienst `bros-inc-server` an.
+2. Bei `OPENAI_API_KEY` deinen OpenAI-Key eintragen (oder leer lassen für Skript-Anrufer).
+   Für LiteLLM stattdessen `LLM_BASE_URL`, `LLM_API_KEY` und `LLM_MODEL` setzen.
+3. Nach dem Deploy steht die Adresse oben, z. B. `https://bros-inc-server.onrender.com`.
+   Unter `/api/health` siehst du, ob die KI aktiv ist (`"ai": true`).
+
+Der Gratis-Plan schläft nach 15 Minuten ohne Besucher ein. Der erste «Raum erstellen» danach dauert dann etwa
+30 bis 60 Sekunden. Mit einem bezahlten Plan passiert das nicht.
+
+**Variante B: Docker (eigener Server, Railway, Fly.io …)**
 
 ```bash
-cd server && npx wrangler login
+docker build -t bros-inc-server .
 ```
 
 ```bash
-cd server && npx wrangler deploy
+docker run -d -p 8787:8787 -e OPENAI_API_KEY=sk-... --name bros bros-inc-server
 ```
 
-Für KI-Anrufer den Key als Secret setzen (nicht in `wrangler.toml`):
+Davor gehört ein HTTPS-Proxy (z. B. Caddy oder nginx), denn Toki läuft über HTTPS und braucht deshalb `wss://`.
+
+**Variante C: direkt mit Node.js 20+**
 
 ```bash
-cd server && npx wrangler secret put OPENAI_API_KEY
+npm ci && npm run build -w server && npm start
 ```
-
-Für LiteLLM stattdessen `LLM_BASE_URL`, `LLM_API_KEY` und `LLM_MODEL` als Secrets setzen. Die erlaubten Seiten
-(`ALLOWED_ORIGINS`) stehen in `server/wrangler.toml`.
 
 ### 2. Spiel auf Toki hochladen
 
 Auf Toki unter **My games → Upload keys** einen Key erstellen, dann:
 
 ```bash
-TOKI_KEY=toki_... VITE_SERVER_URL=https://bros-inc-server.<dein-name>.workers.dev npm run toki:upload
+TOKI_KEY=toki_... VITE_SERVER_URL=https://bros-inc-server.onrender.com npm run toki:upload
 ```
 
 Das baut den Client und lädt `client/dist` mit Toki's offiziellem Uploader hoch. Titel, Beschreibung DE/EN,

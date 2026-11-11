@@ -4,14 +4,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node ../scripts/sync-env.mjs && wrangler dev --port 8787 --ip 127.0.0.1",
-    "deploy": "wrangler deploy"
+    "dev": "tsx watch src/main.ts",
+    "build": "esbuild src/main.ts --bundle --platform=node --target=node20 --format=esm --external:ws --outfile=dist/main.js",
+    "start": "node dist/main.js"
   },
   "dependencies": {
-    "@bros/shared": "1.0.0"
+    "@bros/shared": "1.0.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20241205.0",
-    "wrangler": "^4.160.0"
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8.5.13",
+    "esbuild": "^0.24.2",
+    "tsx": "^4.19.2"
   }
 }

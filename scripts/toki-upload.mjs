@@ -1,6 +1,6 @@
 // Builds the game and puts it on Toki with Toki's official upload script.
 // Needs TOKI_KEY (Toki → My games → Upload keys) and VITE_SERVER_URL (the deployed game server).
-// Usage: TOKI_KEY=toki_... VITE_SERVER_URL=https://bros-inc-server.<you>.workers.dev npm run toki:upload [-- --dry-run]
+// Usage: TOKI_KEY=toki_... VITE_SERVER_URL=https://bros-inc-server.onrender.com npm run toki:upload [-- --dry-run]
 import { execSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
 if (!process.env.VITE_SERVER_URL) {
-  console.error("VITE_SERVER_URL fehlt: die Adresse des deployten Spielservers (z. B. https://bros-inc-server.<name>.workers.dev).");
+  console.error("VITE_SERVER_URL fehlt: die Adresse des deployten Spielservers (z. B. https://bros-inc-server.onrender.com).");
   process.exit(1);
 }
 if (!process.env.TOKI_KEY && !args.includes("--dry-run")) {

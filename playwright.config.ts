@@ -13,13 +13,13 @@ export default defineConfig({
   use: { viewport: { width: 1280, height: 720 }, trace: "off" },
   webServer: [
     {
-      command:
-        "npx wrangler dev --port 8788 --ip 127.0.0.1 --var TEST_DAY_SECONDS:75 --var OPENAI_API_KEY: --var LLM_API_KEY: --var LLM_BASE_URL:",
+      // scripted callers (no AI keys, no .env) and a short day
+      command: "npx tsx src/main.ts",
       cwd: "server",
       url: `${SERVER}/api/health`,
-      env: { WRANGLER_SEND_METRICS: "false" },
+      env: { PORT: "8788", HOST: "127.0.0.1", TEST_DAY_SECONDS: "75", NO_DOTENV: "1", OPENAI_API_KEY: "", LLM_BASE_URL: "", LLM_API_KEY: "" },
       reuseExistingServer: false,
-      timeout: 120_000,
+      timeout: 60_000,
     },
     {
       command: "npx vite --port 5174 --host 127.0.0.1",
