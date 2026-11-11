@@ -1,6 +1,6 @@
 # Toki-Eintrag: Scam with your Bros · Version 1.0
 
-Diese Angaben stehen auch maschinenlesbar in `client/public/toki.json` und werden beim Upload übernommen.
+Diese Angaben stehen auch maschinenlesbar in `toki.json` (Hauptordner) und werden beim Upload übernommen.
 
 | Feld | Wert |
 | --- | --- |
@@ -8,6 +8,7 @@ Diese Angaben stehen auch maschinenlesbar in `client/public/toki.json` und werde
 | Slug / Adresse | `scam-with-your-bros` → `/game/scam-with-your-bros`, Spiel unter `https://scam-with-your-bros.playtoki.app/` |
 | Kategorie | `other`. Toki hat keine Kategorie «Mehrspieler»; Mehrspieler ist das Flag `multiplayer: true`, das als Badge erscheint |
 | Mehrspieler | ja, Räume per Code, `max_players: 8`, Einladungs-Parameter `room` |
+| Highscore | Bro-Bucks des Teams pro Tag, höher ist besser |
 | Engine | HTML/TypeScript (Vite) |
 | Version | 1.0 «Erste Schicht bei Bros Inc.» |
 | Cover | `client/public/cover.png` (1280×720) |

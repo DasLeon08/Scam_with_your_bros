@@ -120,11 +120,12 @@ beitreten muss man trotzdem selbst über den Code.
    Render liest [`render.yaml`](render.yaml) und legt den Dienst `bros-inc-server` an.
 2. Bei `OPENAI_API_KEY` deinen OpenAI-Key eintragen (oder leer lassen für Skript-Anrufer).
    Für LiteLLM stattdessen `LLM_BASE_URL`, `LLM_API_KEY` und `LLM_MODEL` setzen.
-3. Nach dem Deploy steht die Adresse oben, z. B. `https://bros-inc-server.onrender.com`.
+3. Nach dem Deploy steht die Adresse oben, normalerweise `https://scam-with-your-bros-server.onrender.com`.
+   Das ist dieselbe Adresse wie in `.env.production`. Weicht sie ab, trägst du sie dort ein.
    Unter `/api/health` siehst du, ob die KI aktiv ist (`"ai": true`).
 
-Der Gratis-Plan schläft nach 15 Minuten ohne Besucher ein. Der erste «Raum erstellen» danach dauert dann etwa
-30 bis 60 Sekunden. Mit einem bezahlten Plan passiert das nicht.
+Der Gratis-Plan schläft nach 15 Minuten ohne Besucher ein. Das Spiel weckt ihn beim Öffnen auf und zeigt beim
+ersten «Raum erstellen» einen Hinweis, falls das 30 bis 60 Sekunden dauert. Mit einem bezahlten Plan passiert das nicht.
 
 **Variante B: Docker (eigener Server, Railway, Fly.io …)**
 
@@ -141,25 +142,28 @@ Davor gehört ein HTTPS-Proxy (z. B. Caddy oder nginx), denn Toki läuft über H
 **Variante C: direkt mit Node.js 20+**
 
 ```bash
-npm ci && npm run build -w server && npm start
+npm ci && npm run build:server && npm start
 ```
 
-### 2. Spiel auf Toki hochladen
+### 2. Spiel auf Toki (automatisch bei jedem Push)
 
-Auf Toki unter **My games → Upload keys** einen Key erstellen, dann:
+1. Auf Toki **Spiel hinzufügen → Von GitHub** wählen, dieses Repository und den Branch **`main`** auswählen.
+2. Toki meldet «Quellcode, aber kein Build». Dann **«GitHub Action einrichten»** klicken und den Pull Request
+   von Toki Connect mergen (er legt `.github/workflows/toki.yml` an und braucht keinen Key).
+3. Ab dann baut GitHub bei jedem Push auf `main` das Spiel (`npm ci` und `npm run build` → `dist/`) und stellt es auf Toki.
+
+Alle Angaben für den Eintrag stehen in [`toki.json`](toki.json) im Hauptordner: Titel, Beschreibung DE/EN,
+Steuerung, Kategorie, Cover, Screenshots, Multiplayer (max. 8), Highscore und Version. `folder: dist` sagt Toki,
+wo der Build liegt. Für ein Update erhöhst du `version`, schreibst `notes` und pushst: Toki postet dann ein Update für die Spieler.
+
+Die Adresse des Spielservers steht in [`.env.production`](.env.production) (`VITE_SERVER_URL`, kein Geheimnis).
+Wenn Render deinem Dienst eine andere Adresse gibt oder der Server woanders läuft, änderst du sie dort und pushst.
+
+Von Hand hochladen geht auch (Key unter **Meine Spiele → Upload keys**):
 
 ```bash
-TOKI_KEY=toki_... VITE_SERVER_URL=https://bros-inc-server.onrender.com npm run toki:upload
+TOKI_KEY=toki_... npm run toki:upload
 ```
-
-Das baut den Client und lädt `client/dist` mit Toki's offiziellem Uploader hoch. Titel, Beschreibung DE/EN,
-Steuerung, Kategorie, Cover, Screenshots, Multiplayer (max. 8) und Version kommen aus
-[`client/public/toki.json`](client/public/toki.json).
-Für ein Update erhöhst du `version` und schreibst `notes`: Toki postet dann automatisch ein Update für die Spieler.
-Mit `-- --dry-run` siehst du vorher, was hochgeladen würde.
-
-Automatisch geht es auch: `.github/workflows/toki.yml` lädt bei jedem Push auf `main` hoch.
-Dafür braucht das Repository das Secret `TOKI_KEY` und die Variable `VITE_SERVER_URL`.
 
 ### Screenshots neu machen
 
