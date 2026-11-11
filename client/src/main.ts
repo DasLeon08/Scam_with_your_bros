@@ -1,6 +1,7 @@
 import "./style.css";
 import {
   COLORS,
+  PITCH_WORDS,
   HAIRS,
   RULES,
   SCHEMES,
@@ -215,7 +216,7 @@ function mountTitle(): Mounted {
       <label for="name">Dein Name</label>
       <input id="name" class="input" maxlength="16" placeholder="z. B. Leon" value="${esc(profile.name)}">
       <label>Dein Bro</label>
-      <div class="row" style="justify-content:space-between"><div class="colors" id="colors"></div><div class="hairs" id="hairs"></div></div>
+      <div class="colors" id="colors"></div><div class="hairs" id="hairs"></div>
       <button type="button" class="btn pink" data-act="create">📞 Raum erstellen</button>
       <div class="or">– oder mit Code beitreten –</div>
       <input id="code" class="input code-in" maxlength="5" placeholder="CODE" value="${esc(linkCode())}" aria-label="Raumcode">
@@ -273,7 +274,7 @@ function mountLobby(): Mounted {
   stage.innerHTML = `
   <section class="screen lobby">
     <div class="panel codebox">
-      <h2 style="font-size:30px">Dein Raum</h2>
+      <div class="row"><h2 style="font-size:30px">Dein Raum</h2><span class="chip aibadge" id="aimode" style="margin-left:auto"></span></div>
       <div class="code-big" id="code-big"></div>
       <div class="row"><button class="btn ghost sm" data-act="copy">📋 Code kopieren</button><button class="btn ghost sm" data-act="leave">🚪 Verlassen</button></div>
       <p class="hint">${inToki ? "Teile den Code oder nutze «Invite friends» auf Toki. " : ""}Freunde treten nur mit diesem Code bei. Es gibt keine öffentlichen Räume und kein Matchmaking.</p>
@@ -285,7 +286,7 @@ function mountLobby(): Mounted {
       <div class="row"><h1 style="font-size:40px">Die Belegschaft</h1><span class="chip" style="margin-left:auto" id="count"></span></div>
       <div class="pgrid" id="pgrid"></div>
       <div class="bossbox" id="bossbox"></div>
-      ${chatPanel(148).replace('class="panel teamchat"', 'class="teamchat" style="border:3px solid var(--ink);border-radius:14px;background:#fff"')}
+      ${chatPanel(0).replace('class="panel teamchat" style="height:0px"', 'class="teamchat" style="flex:1; min-height:0; height:auto; border:3px solid var(--ink); border-radius:14px; background:#fff"')}
     </div>
   </section>`;
   return {
@@ -293,10 +294,11 @@ function mountLobby(): Mounted {
     update() {
       const s = S!;
       $("#code-big")!.textContent = s.code;
+      $("#aimode")!.textContent = s.ai ? "🤖 KI-Anrufer" : "📜 Skript-Anrufer";
       const online = s.players.filter((p) => p.connected);
       $("#count")!.textContent = `${online.length} / ${RULES.maxPlayers}`;
       const cards = online.map(
-        (p) => `<div class="pcard ${p.id === me ? "me" : ""}">${p.host ? `<div class="crown">${art.crown()}</div>` : ""}${art.bro(p.color, p.hair, 96)}<b>${esc(p.name)}${p.id === me ? " (du)" : ""}</b>
+        (p) => `<div class="pcard ${p.id === me ? "me" : ""}">${p.host ? `<div class="crown">${art.crown()}</div>` : ""}${art.bro(p.color, p.hair, 76)}<b>${esc(p.name)}${p.id === me ? " (du)" : ""}</b>
           <span class="chip" style="background:${p.host ? "var(--mustard)" : "var(--mint)"}">${p.host ? "Host" : "Bereit"}</span></div>`,
       );
       while (cards.length < RULES.maxPlayers) cards.push(`<div class="pcard empty">Platz frei</div>`);
@@ -311,9 +313,9 @@ function mountLobby(): Mounted {
               ? `<button class="chip ${s.daySeconds === d ? "on" : ""}" data-act="daylen" data-v="${d}">⏱ ${d / 60} Min.</button>`
               : s.daySeconds === d ? `<span class="chip">⏱ Tag: ${d / 60} Min.</span>` : "",
           )
-          .join("")}<span class="chip">🎯 Quote: ${s.quota} BB</span><span class="chip aibadge">${s.ai ? "🤖 KI-Anrufer" : "📜 Skript-Anrufer"}</span></div>
+          .join("")}<span class="chip">🎯 ${s.quota} BB</span></div>
         ${isHost()
-          ? `<button class="btn pink" style="font-size:28px" data-act="start" ${enough ? "" : "disabled"}>▶ Schicht starten</button>
+          ? `<button class="btn pink" style="font-size:26px; padding:8px 22px" data-act="start" ${enough ? "" : "disabled"}>▶ Schicht starten</button>
              <p class="hint" style="text-align:center">${enough ? `${online.length} von ${RULES.maxPlayers} Bros da` : `Warte auf mindestens ${RULES.minPlayers} Bros. Teile den Code!`}</p>`
           : `<p class="hint" style="text-align:center; font-size:17px">Warte, bis ${esc(host?.name ?? "der Host")} die Schicht startet…</p>`}`;
       updateChat();
@@ -506,6 +508,8 @@ function updateCall(c: CallView) {
   for (const k of sc.keywords.filter((w) => !said.includes(w)).slice(0, 3)) chips.push(`<button class="chip" data-act="insert" data-v="${esc(k)}">💡 ${esc(k)}</button>`);
   const like = persona?.likes.find((w) => !said.includes(w) && w.length > 3);
   if (like) chips.push(`<button class="chip" data-act="insert" data-v="${esc(like)}">💛 ${esc(like)}</button>`);
+  const pitch = PITCH_WORDS.find((w) => !said.includes(w));
+  if (pitch) chips.push(`<button class="chip" data-act="insert" data-v="${esc(pitch)}">✨ ${esc(pitch)}</button>`);
   chips.push(`<button class="chip" data-act="hangup" data-v="${c.id}">📴 Auflegen</button>`);
   $("#sugg")!.innerHTML = chips.join("");
   const btn = $<HTMLButtonElement>("#say-btn")!;

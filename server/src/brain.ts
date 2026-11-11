@@ -1,4 +1,4 @@
-import { RULES, sanitizeText, type Intel, type Persona, type Scheme } from "@bros/shared";
+import { PITCH_WORDS, RULES, sanitizeText, type Intel, type Persona, type Scheme } from "@bros/shared";
 
 export interface BrainContext {
   persona: Persona;
@@ -80,6 +80,7 @@ export class ScriptedBrain implements CallerBrain {
     const fresh = (words: string[]) => words.filter((w) => !earlier.includes(w));
     delta += Math.min(2, count(msg, fresh(scheme.keywords))) * 4;
     delta += Math.min(2, count(msg, fresh(persona.likes))) * 6;
+    delta += Math.min(2, count(msg, fresh(PITCH_WORDS))) * 3;
     delta -= count(msg, persona.dislikes) * 8;
     if (/\b(bitte|danke|gerne|freundlich)\b/.test(msg)) delta += 2;
     if (msg.length < 12) delta -= 3;

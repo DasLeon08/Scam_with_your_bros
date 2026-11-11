@@ -83,18 +83,19 @@ button.chip.on { background: var(--mustard); }
 .hairs button.sel { background: var(--mustard); }
 
 /* ---------- lobby ---------- */
-.lobby { position: absolute; inset: 24px 40px; display: grid; grid-template-columns: 420px 1fr; gap: 28px; }
-.codebox { padding: 24px 28px; display: flex; flex-direction: column; gap: 12px; }
-.code-big { font-family: "Lilita"; font-size: 92px; letter-spacing: 10px; text-align: center; background: var(--ink); color: var(--mustard); border-radius: 14px; padding: 6px 0; text-shadow: 4px 4px 0 var(--pink); user-select: all; }
-.players { padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+.lobby { position: absolute; inset: 24px 40px; display: grid; grid-template-columns: 420px 1fr; grid-template-rows: 100%; gap: 28px; }
+.lobby > .panel { min-height: 0; overflow: hidden; }
+.codebox { padding: 20px 26px; display: flex; flex-direction: column; gap: 10px; }
+.code-big { font-family: "Lilita"; font-size: 66px; letter-spacing: 10px; text-align: center; background: var(--ink); color: var(--mustard); border-radius: 14px; padding: 6px 0; text-shadow: 4px 4px 0 var(--pink); user-select: all; }
+.players { padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }
 .pgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-.pcard { border: 3px solid var(--ink); border-radius: 14px; background: #fff; padding: 12px; text-align: center; box-shadow: var(--shadow-s); position: relative; min-height: 152px; }
+.pcard { border: 3px solid var(--ink); border-radius: 14px; background: #fff; padding: 10px; text-align: center; box-shadow: var(--shadow-s); position: relative; min-height: 138px; }
 .pcard b { display: block; font-size: 18px; }
 .pcard.me { background: #fffbe8; }
 .pcard.empty { background: repeating-linear-gradient(-45deg, var(--paper), var(--paper) 10px, var(--paper2) 10px, var(--paper2) 20px); border-style: dashed; box-shadow: none; display: grid; place-items: center; color: #8a7a5a; font-weight: 900; }
 .crown { position: absolute; top: -20px; left: 50%; transform: translateX(-50%) rotate(-8deg); }
 .crown svg { width: 44px; height: 33px; }
-.steps { border: 3px dashed var(--ink); border-radius: 12px; padding: 10px 14px; background: #fff; font-size: 14px; line-height: 1.55; }
+.steps { border: 3px dashed var(--ink); border-radius: 12px; padding: 8px 12px; background: #fff; font-size: 13px; line-height: 1.5; }
 .bossbox { background: var(--ink); color: #fff; border-radius: 14px; padding: 12px 16px; display: flex; gap: 14px; align-items: center; }
 .bossbox b { color: var(--mustard); font-family: "Lilita"; font-weight: 400; font-size: 17px; display: block; }
 
@@ -227,7 +228,7 @@ button.chip.on { background: var(--mustard); }
 .popup { position: absolute; width: 190px; border: 3px solid var(--ink); border-radius: 10px; background: #fff; box-shadow: var(--shadow-s); font-size: 12px; overflow: hidden; cursor: pointer; z-index: 21; }
 .popup .wt { background: var(--pink); color: #fff; padding: 2px 8px; border-bottom: 2px solid var(--ink); font-weight: 900; display: flex; justify-content: space-between; }
 .popup p { padding: 8px; font-weight: 800; }
-.toasts { position: absolute; left: 50%; top: 84px; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; align-items: center; z-index: 30; pointer-events: none; }
+.toasts { position: absolute; left: 50%; bottom: 140px; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; align-items: center; z-index: 30; pointer-events: none; }
 .toast { background: var(--ink); color: #fff; border: 3px solid var(--ink); border-radius: 12px; padding: 8px 16px; font-weight: 900; box-shadow: var(--shadow-s); animation: pop .25s ease-out; }
 .toast.good { background: var(--mint); color: var(--ink); }
 .toast.bad { background: var(--red); }

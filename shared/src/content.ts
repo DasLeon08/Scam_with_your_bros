@@ -234,6 +234,9 @@ export const PERSONAS: Persona[] = [
   },
 ];
 
+/** Sales words every caller likes a little (each counts once per call). */
+export const PITCH_WORDS = ["garantiert", "exklusiv", "gratis", "geschenk", "offiziell", "zertifiziert", "experte", "sonderangebot", "nur heute", "bonus", "vip", "einmalig", "persönlich"];
+
 export interface Scheme {
   id: string;
   title: string;
