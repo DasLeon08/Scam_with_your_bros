@@ -1,7 +1,8 @@
 import { CLOSE, randomCode, type ClientMsg, type ServerMsg } from "@bros/shared";
-import { AI_KEY_RE, AI_MODEL_RE, type AiKeyProblem } from "@bros/shared";
-import { DEFAULT_MODEL, HybridBrain, LlmBrain, OPENAI_BASE_URL, RoomLimiter, ScriptedBrain, llmConfigFromEnv, verifyEndpoint, type LlmConfig } from "./brain";
-import { checkAiUrl, safeFetch } from "./netguard";
+import type { AiKeyProblem } from "@bros/shared";
+import { HybridBrain, LlmBrain, RoomLimiter, ScriptedBrain, llmConfigFromEnv, verifyEndpoint, type LlmConfig } from "./brain";
+import { endpointFromInput } from "./endpoint";
+import { safeFetch } from "./netguard";
 import type { ServerConfig } from "./config";
 import { GameEngine } from "./engine";
 
@@ -77,13 +78,9 @@ export class Room {
       this.engine.setBrain(this.makeBrain(this.serverLlm));
       return reply(true);
     }
-    const auth = msg.auth === "api-key" || msg.auth === "none" ? msg.auth : "bearer";
-    const key = typeof msg.key === "string" ? msg.key.trim() : "";
-    if (auth !== "none" && !AI_KEY_RE.test(key)) return reply(false, "bad_format");
-    const model = typeof msg.model === "string" && AI_MODEL_RE.test(msg.model.trim()) ? msg.model.trim() : DEFAULT_MODEL;
-    const url = checkAiUrl(typeof msg.baseUrl === "string" && msg.baseUrl.trim() ? msg.baseUrl : OPENAI_BASE_URL);
-    if (!url.ok) return reply(false, url.reason);
-    const cfg: LlmConfig = { baseUrl: url.url.href.replace(/\/+$/, ""), apiKey: auth === "none" ? "" : key, auth, model, temperature: 0.9, timeoutMs: 15000 };
+    const input = endpointFromInput(msg);
+    if (!input.ok) return reply(false, input.reason);
+    const cfg = input.cfg;
     const check = await verifyEndpoint(cfg, this.playerFetch);
     if (check !== "ok") return reply(false, check);
     if (!this.conns.has(conn)) return; // left while the endpoint was checked

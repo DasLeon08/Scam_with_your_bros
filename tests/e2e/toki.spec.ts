@@ -46,6 +46,7 @@ const reported = (page: Page, type: string) => page.evaluate((t) => (window as a
 test("inside Toki: name, Invite friends, invite link and high score", async ({ browser }) => {
   const A = await (await browser.newContext()).newPage();
   const B = await (await browser.newContext()).newPage();
+  for (const p of [A, B]) await p.addInitScript(() => localStorage.setItem("bros.tutorial.done", "1")); // the tour has its own test
 
   // Toki gives the name; "Invite friends" opens a room without touching the title screen
   const gameA = await openOnToki(A, "TokiLeon");

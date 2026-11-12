@@ -62,6 +62,7 @@ test("two browser windows play a complete day in one room", async ({ browser }) 
 
   const ctxA = await browser.newContext();
   const ctxB = await browser.newContext();
+  for (const c of [ctxA, ctxB]) await c.addInitScript(() => localStorage.setItem("bros.tutorial.done", "1")); // the tour has its own test
   const A = await ctxA.newPage();
   const B = await ctxB.newPage();
   const errors: string[] = [];

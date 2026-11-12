@@ -134,4 +134,17 @@ describe("Node game server", () => {
     expect(llmCalls.at(-1)!.url).toBe("https://my-proxy.example.com/openai/v1/chat/completions");
     a.ws.close();
   });
+
+  it("\"Verbindung testen\": checks an endpoint without a room", async () => {
+    const test = async (body: object) =>
+      (await fetch(`http://${base}/api/ai/test`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) })).json();
+    expect(await test({ key: GOOD, baseUrl: "https://api.example.com/v1", model: "m1" })).toMatchObject({ ok: true, model: "m1" });
+    expect(await test({ key: "sk-wrong-key-000000000000000000", baseUrl: "https://api.example.com/v1" })).toMatchObject({ ok: false, reason: "bad_key" });
+    expect(await test({ key: GOOD, baseUrl: "https://192.168.1.10/v1" })).toMatchObject({ ok: false, reason: "blocked_url" });
+    expect(await test({ key: "x", baseUrl: "https://api.example.com/v1" })).toMatchObject({ ok: false, reason: "bad_format" });
+    // limited per IP
+    const codes = [];
+    for (let i = 0; i < 4; i++) codes.push((await fetch(`http://${base}/api/ai/test`, { method: "POST", body: "{}" })).status);
+    expect(codes).toContain(429);
+  });
 });

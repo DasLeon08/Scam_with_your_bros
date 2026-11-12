@@ -14,7 +14,10 @@ const open = async (name, color) => {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   const p = await ctx.newPage();
   await p.goto(url);
-  await p.evaluate(([n, c, h]) => localStorage.setItem("bros.profile", JSON.stringify({ name: n, color: c, hair: h })), [name, ...color]);
+  await p.evaluate(([n, c, h]) => {
+    localStorage.setItem("bros.profile", JSON.stringify({ name: n, color: c, hair: h }));
+    localStorage.setItem("bros.tutorial.done", "1");
+  }, [name, ...color]);
   await p.reload();
   return p;
 };

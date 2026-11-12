@@ -242,6 +242,24 @@ button.chip.on { background: var(--mustard); }
 .ai-grid .input { font-size: 15px; padding: 7px 10px; width: 100%; }
 select.input { appearance: auto; }
 
+.tut { width: 600px; padding: 22px 28px 20px; gap: 12px; }
+.tut h2 { font-size: 30px; }
+.tut p { font-size: 17px; line-height: 1.4; min-height: 96px; }
+.tut-skip { position: absolute; top: 12px; right: 12px; }
+.tut-art { height: 170px; border: 3px solid var(--ink); border-radius: 14px; display: grid; place-items: center; overflow: hidden;
+  background-image: repeating-conic-gradient(from 0deg at 50% 60%, rgba(255,255,255,.3) 0 10deg, transparent 10deg 20deg) !important; }
+.tut-art svg { margin-top: 26px; }
+.tut-code { font-family: "Lilita"; font-size: 72px; letter-spacing: 10px; background: var(--ink); color: var(--mustard); border-radius: 14px; padding: 4px 22px; text-shadow: 4px 4px 0 var(--pink); }
+.tut-bar { width: 360px; height: 38px; border: 4px solid var(--ink); border-radius: 999px; background: #fff; position: relative; overflow: hidden; }
+.tut-bar i { position: absolute; inset: 0 18% 0 0; background: linear-gradient(90deg, var(--red), var(--mustard) 45%, var(--mint)); border-right: 4px solid var(--ink); }
+.tut-bar span { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 900; }
+.tut-hex { display: grid; grid-template-columns: repeat(3, 70px); gap: 8px; padding: 14px; background: #13101f; border-radius: 12px; border: 3px solid var(--ink); }
+.tut-hex b { font-family: "JetBrains Mono", monospace; color: #9fe9cf; border: 2px solid #3d3660; border-radius: 6px; text-align: center; padding: 6px 0; font-size: 20px; }
+.tut-hex b.on { border-color: var(--mustard); color: var(--mustard); box-shadow: 0 0 0 2px var(--mustard); }
+.tut-dots { display: flex; gap: 8px; justify-content: center; }
+.tut-dots i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--ink); background: #fff; }
+.tut-dots i.on { background: var(--pink); }
+
 /* ---------- review ---------- */
 .boss { position: absolute; inset: 24px 40px; display: grid; grid-template-columns: 430px 1fr; gap: 28px; }
 .boss-l { position: relative; }

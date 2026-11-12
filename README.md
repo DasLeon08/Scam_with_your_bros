@@ -26,6 +26,13 @@ keine echten Firmen, keine echten Methoden, kein Echtgeld.
 **Anrufer:** Gustav Grummelbart (Leuchtturmwärter), Kiki Sternschnuppe (Influencerin), Prof. Dr. Balduin Knopf
 (Knopfforscher), Wilma Wirbelwind (Rennschnecken-Trainerin) und Herr Blümchen (Scambaiter).
 
+## Tutorial
+
+Beim ersten Öffnen erscheint eine kurze Anleitung mit 7 Schritten: Raum per Code, Abnehmen, Vertrauen, Hacken,
+Scambaiter, Quote, Chef und Shop. Sie lässt sich jederzeit mit «Überspringen» oder Esc schliessen und kommt danach
+nicht mehr von selbst. Über **«❓ So geht's»** auf dem Titelscreen und in der Lobby öffnet man sie wieder
+(`client/src/tutorial.ts`).
+
 ## KI-Anrufer: Skript oder eigener KI-Endpunkt
 
 Die Anrufer antworten **per Skript** (Standard, gratis, ohne Einrichtung) **oder per KI**.
@@ -46,6 +53,9 @@ Die Modellnamen in den Voreinstellungen sind nur Vorschläge, jedes Modell des E
 
 - Der Key bleibt **auf dem Gerät des Spielers**, in IndexedDB. Absichtlich nicht in `localStorage`,
   weil Toki das in die Toki-Konten synchronisiert.
+- **«🔌 Verbindung testen»** prüft die Einstellung sofort, auch ohne Raum: Der Server schickt eine winzige
+  Test-Anfrage und meldet Erfolg und Antwortzeit oder genau, was nicht stimmt (Key, Modell, Adresse, nicht erreichbar).
+  Pro IP sind 6 Tests pro Minute möglich.
 - Wer Host ist, schickt die Einstellung einmal an den Spielserver. Der prüft sie mit einer winzigen Test-Anfrage
   und nutzt sie **nur für diesen Raum, nur im Arbeitsspeicher**. Der Key wird nicht gespeichert und nicht geloggt
   und nie an Mitspieler oder zurück an Browser geschickt.

@@ -5,8 +5,9 @@ const url = `${CLIENT}/?server=${encodeURIComponent(SERVER)}`;
 const FAKE = "sk-test-not-a-real-key-1234567890";
 
 test("own AI endpoint: providers, custom URL, kept on this device only, internal addresses refused", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("bros.tutorial.done", "1"));
   await page.goto(url);
-  await expect(page.locator("#ai-label")).toHaveText("Skript (gratis)");
+  await expect(page.locator("#ai-label")).toHaveText("Skript-Anrufer (gratis)");
 
   // the setting is optional and explains where the key goes
   await page.click("[data-act=aisettings]");
@@ -24,15 +25,19 @@ test("own AI endpoint: providers, custom URL, kept on this device only, internal
   await page.fill("#ai-key", FAKE);
   await page.click(".modal button.pink");
   await expect(page.locator("#ai-status")).toContainText("https");
+  await page.click("[data-act=aitest]"); // the test button explains the same problem
+  await expect(page.locator("#ai-status")).toContainText("https");
   await page.fill("#ai-url", "https://127.0.0.1:4000/v1"); // looks fine here, the server refuses it
   await page.fill("#ai-model", "firma/gpt-4o-mini");
+  await page.click("[data-act=aitest]");
+  await expect(page.locator("#ai-status")).toContainText("❌ Interne Adressen");
   await page.click(".modal button.pink");
   await expect(page.locator("#ai-status")).toContainText("Gespeichert");
-  await expect(page.locator("#ai-label")).toContainText("Eigener Endpunkt");
+  await expect(page.locator("#ai-label")).toContainText("KI: Eigener Endpunkt");
 
   // kept after a reload, but never in localStorage (Toki syncs that into accounts)
   await page.reload();
-  await expect(page.locator("#ai-label")).toContainText("Eigener Endpunkt");
+  await expect(page.locator("#ai-label")).toContainText("KI: Eigener Endpunkt");
   expect(await page.evaluate(() => JSON.stringify({ ...localStorage }))).not.toContain(FAKE);
 
   // hosting sends it to the server, which refuses internal addresses; scripted callers stay

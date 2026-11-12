@@ -17,7 +17,8 @@ import {
 import * as art from "./art";
 import { AI_KEY_RE, AI_MODEL_RE, AI_PROVIDERS, providerById, type AiAuth } from "@bros/shared";
 import { clearAiSettings, loadAiSettings, maskKey, saveAiSettings, type AiSettings } from "./keystore";
-import { Connection, createRoom, inToki, linkCode, onTokiHost, onTokiName, tellToki, tokiScore, wakeServer, type Profile } from "./net";
+import { Connection, createRoom, inToki, linkCode, onTokiHost, onTokiName, tellToki, testAiEndpoint, tokiScore, wakeServer, type Profile } from "./net";
+import { TUTORIAL, markTutorialDone, tutorialDone } from "./tutorial";
 
 /* ================================================================== */
 /* state                                                              */
@@ -215,23 +216,29 @@ function onEvent(e: GameEvent) {
       break;
     case "aiKey": {
       aiChecking = false;
-      const msg = e.ok
-        ? "🤖 KI-Anrufer sind an: Dein eigener Endpunkt wird für diesen Raum benutzt."
-        : {
-            bad_key: "Der Anbieter hat den Key abgelehnt. Die Skript-Anrufer übernehmen.",
-            bad_model: "Der Anbieter kennt dieses Modell nicht. Prüf den Modellnamen.",
-            bad_url: "Unter dieser Adresse antwortet kein OpenAI-kompatibler Endpunkt (https://…/v1).",
-            blocked_url: "Interne Adressen (localhost, private IPs) sind nicht erlaubt. Der Endpunkt muss öffentlich per https erreichbar sein.",
-            unreachable: "Der Endpunkt ist gerade nicht erreichbar. Die Skript-Anrufer übernehmen.",
-            bad_format: "Das sieht nicht wie ein gültiger Key aus.",
-            not_host: "Nur der Host kann die KI-Anrufer einschalten.",
-          }[e.reason ?? "unreachable"];
+      const msg = e.ok ? "🤖 KI-Anrufer sind an: Dein eigener Endpunkt wird für diesen Raum benutzt." : `${aiProblem(e.reason)} Die Skript-Anrufer übernehmen.`;
       toast(msg, e.ok ? "good" : "bad");
       setAiStatus(msg, !e.ok);
       if (e.ok) setTimeout(() => $(".ai-modal") && ($("#overlay")!.innerHTML = ""), 1200);
       break;
     }
   }
+}
+
+function aiProblem(reason: string | undefined): string {
+  return (
+    {
+      bad_key: "Der Anbieter hat den Key abgelehnt.",
+      bad_model: "Der Anbieter kennt dieses Modell nicht. Prüf den Modellnamen.",
+      bad_url: "Unter dieser Adresse antwortet kein OpenAI-kompatibler Endpunkt (https://…/v1).",
+      blocked_url: "Interne Adressen (localhost, private IPs) sind nicht erlaubt. Der Endpunkt muss öffentlich per https erreichbar sein.",
+      unreachable: "Der Endpunkt ist gerade nicht erreichbar.",
+      bad_format: "Das sieht nicht wie ein gültiger Key aus.",
+      not_host: "Nur der Host kann die KI-Anrufer einschalten.",
+      rate_limited: "Zu viele Tests hintereinander. Warte eine Minute.",
+      server_offline: "Der Spielserver ist nicht erreichbar (er wacht vielleicht gerade auf). Versuch es gleich nochmal.",
+    } as Record<string, string>
+  )[reason ?? "unreachable"] ?? "Das hat nicht geklappt.";
 }
 
 /* ================================================================== */
@@ -285,7 +292,8 @@ function mountTitle(): Mounted {
       <input id="code" class="input code-in" maxlength="5" placeholder="CODE" value="${esc(linkCode())}" aria-label="Raumcode">
       <button type="submit" class="btn ${invited ? "pink" : ""}" id="join-btn">${invited ? `Raum ${invited} beitreten` : "Beitreten"}</button>
       <div class="err" id="title-err" role="status"></div>
-      <button type="button" class="btn ghost sm" data-act="aisettings" id="ai-btn">🤖 KI-Anrufer: <span id="ai-label">…</span></button>
+      <div class="row"><button type="button" class="btn ghost sm" data-act="aisettings" id="ai-btn" style="flex:1; white-space:nowrap; font-size:15px">🤖 <span id="ai-label">…</span></button>
+        <button type="button" class="btn ghost sm" data-act="tutorial" title="Kurze Anleitung">❓ So geht's</button></div>
     </form>
   </section>`;
   const codeIn = $<HTMLInputElement>("#code")!;
@@ -303,7 +311,7 @@ function mountTitle(): Mounted {
       $("#hairs")!.innerHTML = HAIRS.map((h) => `<button type="button" data-act="hair" data-v="${h}" class="${h === profile.hair ? "sel" : ""}" aria-label="Frisur ${h}">${art.bro(profile.color, h, 40)}</button>`).join("");
       renderTitleError(titleError);
       const label = $("#ai-label");
-      if (label) label.textContent = aiSettings ? `eigener Key (${providerById(aiSettings.provider).name.split(" (")[0]})` : "Skript (gratis)";
+      if (label) label.textContent = aiSettings ? `KI: ${providerById(aiSettings.provider).name.split(" (")[0]}` : "Skript-Anrufer (gratis)";
     },
   };
 }
@@ -344,7 +352,7 @@ function mountLobby(): Mounted {
     <div class="panel codebox">
       <div class="row"><h2 style="font-size:30px">Dein Raum</h2><button class="chip aibadge" id="aimode" data-act="aisettings" style="margin-left:auto" title="KI-Einstellungen"></button></div>
       <div class="code-big" id="code-big"></div>
-      <div class="row"><button class="btn ghost sm" data-act="copy">📋 Code kopieren</button><button class="btn ghost sm" data-act="leave">🚪 Verlassen</button></div>
+      <div class="row"><button class="btn ghost sm" data-act="copy">📋 Code kopieren</button><button class="btn ghost sm" data-act="tutorial">❓ So geht's</button><button class="btn ghost sm" data-act="leave">🚪</button></div>
       <p class="hint">${inToki ? "Teile den Code oder nutze «Invite friends» auf Toki. " : ""}Freunde treten nur mit diesem Code bei. Es gibt keine öffentlichen Räume und kein Matchmaking.</p>
       <div class="steps"><b class="display" style="font-size:17px">So läuft eine Schicht</b><br>
         ☎️ Anrufe annehmen und eine Masche wählen<br>💬 Den Anrufer im Chat überzeugen<br>💻 Kollegen hacken Infos vom Fantasie-PC<br>🎯 Tagesquote knacken, Chef glücklich machen</div>
@@ -775,6 +783,7 @@ function showAiSettings() {
       <div class="row" style="justify-content:flex-end; flex-wrap:wrap">
         ${aiSettings ? `<button type="button" class="btn ghost sm" data-act="aiclear">Entfernen</button>` : ""}
         <button type="button" class="btn ghost sm" data-act="aiclose">Schliessen</button>
+        <button type="button" class="btn mint sm" data-act="aitest">🔌 Verbindung testen</button>
         <button class="btn pink sm">Speichern</button>
       </div>
     </form></div>`;
@@ -790,7 +799,8 @@ function showAiSettings() {
   setTimeout(() => $<HTMLSelectElement>("#ai-provider")?.focus(), 0);
 }
 
-async function saveAiFromForm() {
+/** Reads and checks the dialog; null (with a message) when something is missing. */
+function aiFromForm(): AiSettings | null {
   const provider = $<HTMLSelectElement>("#ai-provider")!.value;
   const baseUrl = $<HTMLInputElement>("#ai-url")!.value.trim().replace(/\/+$/, "");
   const auth = $<HTMLSelectElement>("#ai-auth")!.value as AiAuth;
@@ -799,17 +809,35 @@ async function saveAiFromForm() {
   const key = auth === "none" ? "" : typed || aiSettings?.key || "";
   if (!/^https:\/\/[^/\s]+\.[^/\s]+/.test(baseUrl) || baseUrl.includes("DEIN-")) {
     setAiStatus("Der Endpunkt muss eine öffentliche https-Adresse sein, z. B. https://api.openai.com/v1.", true);
-    return;
+    return null;
   }
   if (auth !== "none" && !AI_KEY_RE.test(key)) {
     setAiStatus("Bitte einen gültigen API-Key eintragen (ohne Leerzeichen).", true);
-    return;
+    return null;
   }
   if (!AI_MODEL_RE.test(model)) {
     setAiStatus("Bitte einen Modellnamen eintragen, z. B. gpt-4o-mini.", true);
-    return;
+    return null;
   }
-  aiSettings = { provider, baseUrl, auth, key, model };
+  return { provider, baseUrl, auth, key, model };
+}
+
+async function testAiFromForm() {
+  const v = aiFromForm();
+  if (!v) return;
+  const btn = $<HTMLButtonElement>("[data-act=aitest]");
+  if (btn) btn.disabled = true;
+  setAiStatus("🔌 Teste die Verbindung…");
+  const r = await testAiEndpoint({ baseUrl: v.baseUrl, auth: v.auth, key: v.key, model: v.model });
+  if (btn) btn.disabled = false;
+  if (r.ok) setAiStatus(`✅ Verbindung klappt! Modell «${r.model ?? v.model}» hat in ${((r.ms ?? 0) / 1000).toFixed(1)} s geantwortet.`);
+  else setAiStatus(`❌ ${aiProblem(r.reason)}`, true);
+}
+
+async function saveAiFromForm() {
+  const v = aiFromForm();
+  if (!v) return;
+  aiSettings = v;
   await saveAiSettings(aiSettings);
   $<HTMLInputElement>("#ai-key")!.value = "";
   keySentFor = "";
@@ -821,6 +849,33 @@ async function saveAiFromForm() {
     setTimeout(() => ($("#overlay")!.innerHTML = ""), 1200);
   }
   screen?.update();
+}
+
+/* ---------------- tutorial ---------------- */
+
+function showTutorial(step = 0) {
+  const box = $("#overlay");
+  if (!box) return;
+  const t = TUTORIAL[step];
+  const last = step === TUTORIAL.length - 1;
+  box.innerHTML = `<div class="overlay"><div class="dim"></div>
+    <div class="panel modal tut" role="dialog" aria-label="Anleitung" data-step="${step}">
+      <button class="btn xs ghost tut-skip" data-act="tutskip">Überspringen ✕</button>
+      <div class="tut-art" style="background:${t.bg}">${t.art}</div>
+      <h2>${esc(t.title)}</h2>
+      <p>${esc(t.text)}</p>
+      <div class="tut-dots">${TUTORIAL.map((_, i) => `<i class="${i === step ? "on" : ""}"></i>`).join("")}</div>
+      <div class="row" style="justify-content:space-between">
+        <button class="btn ghost sm" data-act="tutprev" ${step === 0 ? "disabled" : ""}>← Zurück</button>
+        <button class="btn ${last ? "pink" : ""} sm" data-act="tutnext" autofocus>${last ? "Los geht's! 📞" : "Weiter →"}</button>
+      </div>
+    </div></div>`;
+}
+
+function closeTutorial() {
+  markTutorialDone();
+  const box = $("#overlay");
+  if (box?.querySelector(".tut")) box.innerHTML = "";
 }
 
 /* ---------------- scambaiter overlay ---------------- */
@@ -948,6 +1003,24 @@ stage.addEventListener("click", async (e) => {
     case "aisettings":
       showAiSettings();
       break;
+    case "aitest":
+      void testAiFromForm();
+      break;
+    case "tutorial":
+      showTutorial(0);
+      break;
+    case "tutnext": {
+      const step = Number($(".tut")?.dataset.step ?? 0);
+      if (step >= TUTORIAL.length - 1) closeTutorial();
+      else showTutorial(step + 1);
+      break;
+    }
+    case "tutprev":
+      showTutorial(Math.max(0, Number($(".tut")?.dataset.step ?? 0) - 1));
+      break;
+    case "tutskip":
+      closeTutorial();
+      break;
     case "aiclose":
       $("#overlay")!.innerHTML = "";
       break;
@@ -1022,6 +1095,16 @@ setInterval(tickTimers, 250);
 
 render();
 wakeServer();
+// first visit: the short tour (skippable, never forced again)
+if (!tutorialDone()) showTutorial(0);
+window.addEventListener("keydown", (e) => {
+  const tut = $(".tut");
+  if (!tut) return;
+  const step = Number(tut.dataset.step ?? 0);
+  if (e.key === "Escape") closeTutorial();
+  else if (e.key === "ArrowRight") step >= TUTORIAL.length - 1 ? closeTutorial() : showTutorial(step + 1);
+  else if (e.key === "ArrowLeft" && step > 0) showTutorial(step - 1);
+});
 loadAiSettings().then((v) => {
   aiSettings = v;
   screen?.update();

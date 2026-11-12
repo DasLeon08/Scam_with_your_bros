@@ -1,7 +1,9 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { CLOSE, normalizeCode } from "@bros/shared";
 import { WebSocketServer, type WebSocket } from "ws";
-import { llmConfigFromEnv } from "./brain";
+import { llmConfigFromEnv, verifyEndpoint } from "./brain";
+import { endpointFromInput } from "./endpoint";
+import { safeFetch } from "./netguard";
 import { configFromEnv, originAllowed, type ServerConfig } from "./config";
 import { loadDotEnv } from "./dotenv";
 import { RoomRegistry } from "./rooms";
@@ -22,6 +24,7 @@ function creationLimiter(perMinute = 10) {
 export function startServer(cfg: ServerConfig = configFromEnv()) {
   const rooms = new RoomRegistry(cfg);
   const allowCreate = creationLimiter();
+  const allowTest = creationLimiter(6);
   const ai = llmConfigFromEnv(cfg.env) !== null;
 
   const clientIp = (req: IncomingMessage) => {
@@ -52,6 +55,36 @@ export function startServer(cfg: ServerConfig = configFromEnv()) {
     if (!allowed) return reply(res, 403, { error: "origin_not_allowed" });
 
     if (path === "/api/health" || path === "/") return reply(res, 200, { ok: true, ai, rooms: rooms.count }, cors);
+
+    // "Verbindung testen" in the AI settings: one tiny request to the player's endpoint.
+    // The key is used for this one check only: not stored, not logged, not sent anywhere else.
+    if (path === "/api/ai/test" && req.method === "POST") {
+      if (!allowTest(clientIp(req))) return reply(res, 429, { ok: false, reason: "rate_limited" }, cors);
+      let raw = "";
+      let tooBig = false;
+      req.on("data", (c: Buffer) => {
+        raw += c;
+        if (raw.length > 8192) {
+          tooBig = true;
+          req.destroy();
+        }
+      });
+      req.on("end", async () => {
+        if (tooBig) return;
+        let body: Record<string, unknown> = {};
+        try {
+          body = JSON.parse(raw || "{}");
+        } catch {
+          return reply(res, 400, { ok: false, reason: "bad_format" }, cors);
+        }
+        const input = endpointFromInput(body);
+        if (!input.ok) return reply(res, 200, { ok: false, reason: input.reason }, cors);
+        const started = Date.now();
+        const check = await verifyEndpoint(input.cfg, cfg.fetchFn ?? safeFetch);
+        reply(res, 200, { ok: check === "ok", reason: check === "ok" ? undefined : check, ms: Date.now() - started, model: input.cfg.model }, cors);
+      });
+      return;
+    }
 
     if (path === "/api/rooms" && req.method === "POST") {
       req.resume();
