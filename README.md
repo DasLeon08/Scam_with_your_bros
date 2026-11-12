@@ -54,6 +54,10 @@ Die Modellnamen in den Voreinstellungen sind nur Vorschläge, jedes Modell des E
 
 - Der Key bleibt **auf dem Gerät des Spielers**, in IndexedDB. Absichtlich nicht in `localStorage`,
   weil Toki das in die Toki-Konten synchronisiert.
+- **Alle Modelle zur Auswahl:** Sobald Endpunkt und Key eingetragen sind, lädt das Fenster die Modell-Liste
+  des Anbieters (`/models`, kostet nichts). Die Modelle erscheinen alle als Knöpfe und sind beim Tippen durchsuchbar,
+  «📋 Modelle laden» holt sie neu. Ein gespeicherter Key wird dabei nur an dieselbe Adresse geschickt, nie an einen
+  anderen Anbieter.
 - **Adresse und Modell finden:** Antwortet unter der eingetragenen Adresse nichts, probiert der Server sie mit `/v1`
   am Ende noch einmal und übernimmt die Adresse, die antwortet. Der Test holt ausserdem die Modell-Liste des
   Endpunkts (`/models`), die Modelle erscheinen zum Anklicken.

@@ -40,6 +40,18 @@ export async function testAiEndpoint(body: { baseUrl: string; auth: string; key:
   return ((await res.json().catch(() => null)) as AiTestResult | null) ?? { ok: false, reason: "unreachable" };
 }
 
+/** The models the endpoint offers (the server asks its /models; free). */
+export async function loadAiModels(body: { baseUrl: string; auth: string; key: string }): Promise<AiTestResult> {
+  const res = await fetch(`${serverUrl()}/api/ai/models`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  }).catch(() => null);
+  if (!res) return { ok: false, reason: "server_offline", models: [] };
+  if (res.status === 429) return { ok: false, reason: "rate_limited", models: [] };
+  return ((await res.json().catch(() => null)) as AiTestResult | null) ?? { ok: false, reason: "unreachable", models: [] };
+}
+
 export async function createRoom(): Promise<string> {
   const res = await fetch(`${serverUrl()}/api/rooms`, { method: "POST" }).catch(() => null);
   if (!res) throw new Error("offline");

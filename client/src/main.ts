@@ -17,7 +17,7 @@ import {
 import * as art from "./art";
 import { AI_KEY_RE, AI_MODEL_RE, AI_PROVIDERS, providerById, type AiAuth } from "@bros/shared";
 import { clearAiSettings, loadAiSettings, maskKey, saveAiSettings, type AiSettings } from "./keystore";
-import { Connection, createRoom, inToki, linkCode, onTokiHost, onTokiName, tellToki, testAiEndpoint, tokiScore, wakeServer, type Profile } from "./net";
+import { Connection, createRoom, inToki, linkCode, onTokiHost, onTokiName, loadAiModels, tellToki, testAiEndpoint, tokiScore, wakeServer, type Profile } from "./net";
 import { TUTORIAL, markTutorialDone, tutorialDone } from "./tutorial";
 
 /* ================================================================== */
@@ -772,9 +772,11 @@ function showAiSettings() {
           <option value="none" ${cur.auth === "none" ? "selected" : ""}>Ohne Key</option>
         </select>
         <label for="ai-key">API-Key</label>
-        <input id="ai-key" class="input" type="password" spellcheck="false" placeholder="${aiSettings ? "leer lassen = gespeicherten Key behalten" : esc(providerById(cur.provider).keyHint)}">
+        <input id="ai-key" class="input" type="password" spellcheck="false" placeholder="${aiSettings ? "leer lassen = gespeicherten Key behalten (gleicher Anbieter)" : esc(providerById(cur.provider).keyHint)}">
         <label for="ai-model">Modell</label>
-        <input id="ai-model" class="input mono" value="${esc(cur.model)}" spellcheck="false">
+        <div class="row"><input id="ai-model" class="input mono" value="${esc(cur.model)}" spellcheck="false" list="ai-model-list" placeholder="Modell wählen oder eintippen">
+          <button type="button" class="btn ghost sm" data-act="aimodels" style="white-space:nowrap">📋 Modelle laden</button></div>
+        <datalist id="ai-model-list"></datalist>
       </div>
       <p class="hint" style="font-size:12px">Der Endpunkt ist die Adresse vor <span class="mono">/chat/completions</span>.
         🔒 Der Key bleibt auf diesem Gerät. Er geht nur an den Spielserver und nur für deinen Raum, wenn du Host bist.
@@ -795,8 +797,16 @@ function showAiSettings() {
     $<HTMLInputElement>("#ai-model")!.value = p.model;
     $<HTMLSelectElement>("#ai-auth")!.value = p.auth;
     $<HTMLInputElement>("#ai-key")!.placeholder = p.keyHint;
+    showModelChoices([], "");
     if (p.editUrl) setTimeout(() => $<HTMLInputElement>("#ai-url")?.focus(), 0);
+    else void loadModelsFromForm(true);
   });
+  // models show up by themselves as soon as endpoint and key are known
+  const auto = () => void loadModelsFromForm(true);
+  $<HTMLInputElement>("#ai-key")!.addEventListener("change", auto);
+  $<HTMLInputElement>("#ai-url")!.addEventListener("change", auto);
+  $<HTMLSelectElement>("#ai-auth")!.addEventListener("change", auto);
+  if (aiSettings) auto();
   setTimeout(() => $<HTMLSelectElement>("#ai-provider")?.focus(), 0);
 }
 
@@ -807,7 +817,7 @@ function aiFromForm(): AiSettings | null {
   const auth = $<HTMLSelectElement>("#ai-auth")!.value as AiAuth;
   const typed = $<HTMLInputElement>("#ai-key")!.value.trim();
   const model = $<HTMLInputElement>("#ai-model")!.value.trim();
-  const key = auth === "none" ? "" : typed || aiSettings?.key || "";
+  const key = auth === "none" ? "" : typed || savedKeyFor(baseUrl);
   if (!/^https:\/\/[^/\s]+\.[^/\s]+/.test(baseUrl) || baseUrl.includes("DEIN-")) {
     setAiStatus("Der Endpunkt muss eine öffentliche https-Adresse sein, z. B. https://api.openai.com/v1.", true);
     return null;
@@ -843,16 +853,63 @@ async function testAiFromForm() {
   else setAiStatus(`❌ ${aiProblem(r.reason)}${fixed}`, true);
 }
 
-/** Models the endpoint offers, as buttons that fill in the model field. */
+/** Models the endpoint offers, as buttons that fill in the model field (all of them, scrollable). */
 function showModelChoices(models: string[], current: string) {
   const box = $("#ai-models");
+  const list = $("#ai-model-list");
+  if (list) list.innerHTML = models.map((m) => `<option value="${esc(m)}"></option>`).join("");
   if (!box) return;
   box.innerHTML = models.length
-    ? `<span class="hint" style="font-size:12px">Verfügbare Modelle:</span> ${models
-        .slice(0, 24)
+    ? `<span class="hint" style="font-size:12px">${models.length} Modell${models.length === 1 ? "" : "e"} verfügbar:</span> ${models
         .map((m) => `<button type="button" class="chip ${m === current ? "on" : ""}" data-act="aimodel" data-v="${esc(m)}">${esc(m)}</button>`)
-        .join("")}${models.length > 24 ? `<span class="hint" style="font-size:12px">… und ${models.length - 24} weitere</span>` : ""}`
+        .join("")}`
     : "";
+}
+
+/** The saved key, but only for the host it was saved for: never send one provider's key to another. */
+function savedKeyFor(baseUrl: string): string {
+  if (!aiSettings?.key) return "";
+  try {
+    return new URL(baseUrl).host === new URL(aiSettings.baseUrl).host ? aiSettings.key : "";
+  } catch {
+    return "";
+  }
+}
+
+/** Endpoint, login and key from the dialog, without the model (for loading the model list). */
+function endpointFromForm(): { baseUrl: string; auth: AiAuth; key: string } | null {
+  const baseUrl = $<HTMLInputElement>("#ai-url")?.value.trim().replace(/\/+$/, "") ?? "";
+  const auth = ($<HTMLSelectElement>("#ai-auth")?.value ?? "bearer") as AiAuth;
+  const key = auth === "none" ? "" : $<HTMLInputElement>("#ai-key")?.value.trim() || savedKeyFor(baseUrl);
+  if (!/^https:\/\/[^/\s]+\.[^/\s]+/.test(baseUrl) || baseUrl.includes("DEIN-")) return null;
+  if (auth !== "none" && !AI_KEY_RE.test(key)) return null;
+  return { baseUrl, auth, key };
+}
+
+let modelsRequest = 0;
+/** Loads the model list; quiet = automatic (no complaint when key or address are still missing). */
+async function loadModelsFromForm(quiet: boolean) {
+  const ep = endpointFromForm();
+  if (!ep) {
+    if (!quiet) setAiStatus("Für die Modell-Liste braucht es Endpunkt und Key.", true);
+    return;
+  }
+  const id = ++modelsRequest;
+  setAiStatus("📋 Lade die Modelle…");
+  const r = await loadAiModels(ep);
+  if (id !== modelsRequest || !$(".ai-modal")) return; // a newer request or the dialog is closed
+  if (r.baseUrl && r.baseUrl !== ep.baseUrl) $<HTMLInputElement>("#ai-url")!.value = r.baseUrl;
+  const model = $<HTMLInputElement>("#ai-model")?.value.trim() ?? "";
+  showModelChoices(r.models ?? [], model);
+  if (r.ok && r.models?.length) {
+    // the typed model isn't offered: take the first one so the field is never wrong
+    if (!r.models.includes(model)) {
+      $<HTMLInputElement>("#ai-model")!.value = r.models[0];
+      showModelChoices(r.models, r.models[0]);
+    }
+    setAiStatus(`📋 ${r.models.length} Modell${r.models.length === 1 ? "" : "e"} gefunden. Klick eins an, dann «Verbindung testen» oder «Speichern».`);
+  } else if (r.ok) setAiStatus("Der Endpunkt nennt keine Modelle. Trag den Modellnamen selbst ein.");
+  else setAiStatus(`❌ ${aiProblem(r.reason)}`, true);
 }
 
 async function saveAiFromForm() {
@@ -1026,6 +1083,9 @@ stage.addEventListener("click", async (e) => {
       break;
     case "aitest":
       void testAiFromForm();
+      break;
+    case "aimodels":
+      void loadModelsFromForm(false);
       break;
     case "aimodel": {
       const field = $<HTMLInputElement>("#ai-model");

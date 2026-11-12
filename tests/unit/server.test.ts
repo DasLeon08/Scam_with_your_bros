@@ -147,9 +147,23 @@ describe("Node game server", () => {
     const test = async (body: object) =>
       (await fetch(`http://${base}/api/ai/test`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) })).json();
     const wrongModel = await test({ key: GOOD, baseUrl: "https://ask.example.test/api", model: "gpt-4o-mini" });
-    expect(wrongModel).toMatchObject({ ok: false, reason: "bad_model", baseUrl: "https://ask.example.test/api/v1", models: ["llama3", "gpt-4o"] });
+    expect(wrongModel).toMatchObject({ ok: false, reason: "bad_model", baseUrl: "https://ask.example.test/api/v1", models: ["gpt-4o", "llama3"] });
     const right = await test({ key: GOOD, baseUrl: "https://ask.example.test/api", model: "llama3" });
     expect(right).toMatchObject({ ok: true, baseUrl: "https://ask.example.test/api/v1" });
+  });
+
+  it("model list for the picker: finds …/v1, sorted, free (no chat request)", async () => {
+    const models = async (body: object) =>
+      (await fetch(`http://${base}/api/ai/models`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) })).json();
+    llmCalls.length = 0;
+    expect(await models({ key: GOOD, baseUrl: "https://ask.example.test/api" })).toMatchObject({
+      ok: true,
+      baseUrl: "https://ask.example.test/api/v1",
+      models: ["gpt-4o", "llama3"],
+    });
+    expect(llmCalls.every((c) => c.url.endsWith("/models"))).toBe(true);
+    expect(await models({ key: "sk-wrong-key-000000000000000000", baseUrl: "https://ask.example.test/api/v1" })).toMatchObject({ ok: false, reason: "bad_key" });
+    expect(await models({ key: GOOD, baseUrl: "https://10.0.0.1/v1" })).toMatchObject({ ok: false, reason: "blocked_url" });
   });
 
   it("\"Verbindung testen\": checks an endpoint without a room", async () => {

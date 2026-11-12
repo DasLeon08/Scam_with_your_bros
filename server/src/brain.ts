@@ -102,21 +102,48 @@ export async function verifyEndpoint(cfg: LlmConfig, fetchFn: typeof fetch = fet
   }
 }
 
-/** The model names an endpoint offers (GET /models; OpenAI, Open WebUI, LiteLLM, OpenRouter …). */
-export async function listModels(cfg: LlmConfig, fetchFn: typeof fetch = fetch): Promise<string[]> {
+/** The model names an endpoint offers (GET /models; OpenAI, Open WebUI, LiteLLM, OpenRouter …). Costs nothing. */
+export async function fetchModelList(
+  cfg: LlmConfig,
+  fetchFn: typeof fetch = fetch,
+): Promise<{ ok: boolean; reason?: "bad_key" | "bad_url" | "unreachable"; models: string[] }> {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 8000);
+  const timer = setTimeout(() => ctrl.abort(), 10_000);
   try {
     const res = await fetchFn(`${cfg.baseUrl}/models`, { headers: authHeaders(cfg), signal: ctrl.signal });
-    if (!res.ok) return [];
-    const data = (await res.json().catch(() => null)) as { data?: { id?: unknown }[]; models?: { id?: unknown; name?: unknown }[] } | null;
-    const list = (data?.data ?? data?.models ?? []).map((m) => (m as { id?: unknown }).id ?? (m as { name?: unknown }).name);
-    return [...new Set(list.filter((x): x is string => typeof x === "string" && x.length > 0 && x.length <= 128))].slice(0, 60);
-  } catch {
-    return [];
+    if (res.status === 401 || res.status === 403) return { ok: false, reason: "bad_key", models: [] };
+    if (!res.ok) return { ok: false, reason: res.status === 404 ? "bad_url" : "unreachable", models: [] };
+    const data = (await res.json().catch(() => null)) as { data?: unknown[]; models?: unknown[] } | null;
+    const raw = Array.isArray(data?.data) ? data!.data : Array.isArray(data?.models) ? data!.models : null;
+    if (!raw) return { ok: false, reason: "bad_url", models: [] };
+    const names = raw.map((m) => (typeof m === "string" ? m : ((m as { id?: unknown; name?: unknown })?.id ?? (m as { name?: unknown })?.name)));
+    const models = [...new Set(names.filter((x): x is string => typeof x === "string" && x.length > 0 && x.length <= 128))]
+      .sort((a, b) => a.localeCompare(b))
+      .slice(0, 300);
+    return { ok: true, models };
+  } catch (e) {
+    return { ok: false, reason: (e as Error).message === "blocked_url" ? "bad_url" : "unreachable", models: [] };
   } finally {
     clearTimeout(timer);
   }
+}
+
+export async function listModels(cfg: LlmConfig, fetchFn: typeof fetch = fetch): Promise<string[]> {
+  return (await fetchModelList(cfg, fetchFn)).models;
+}
+
+/** The model list, forgiving about the address like probeEndpoint (tries …/v1 too). */
+export async function findModels(cfg: LlmConfig, fetchFn: typeof fetch = fetch) {
+  const tries = [cfg.baseUrl];
+  if (!/\/v\d+$/.test(cfg.baseUrl)) tries.push(`${cfg.baseUrl}/v1`);
+  type Found = { ok: boolean; reason?: "bad_key" | "bad_url" | "unreachable"; models: string[]; baseUrl: string };
+  let last: Found = { ok: false, reason: "bad_url", models: [], baseUrl: cfg.baseUrl };
+  for (const baseUrl of tries) {
+    const r = await fetchModelList({ ...cfg, baseUrl }, fetchFn);
+    last = { ...r, baseUrl };
+    if (r.reason !== "bad_url") break;
+  }
+  return last;
 }
 
 export interface EndpointProbe {
