@@ -58,7 +58,7 @@ async function playDay(page: Page, role: "talker" | "hacker", log: string[]) {
 
 test("two browser windows play a complete day in one room", async ({ browser }) => {
   const health = await (await fetch(`${SERVER}/api/health`)).json();
-  expect(health.ai).toBe(false); // scripted callers for a repeatable run
+  expect(health.ok).toBe(true);
 
   const ctxA = await browser.newContext();
   const ctxB = await browser.newContext();

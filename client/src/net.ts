@@ -17,41 +17,6 @@ export function wakeServer() {
   fetch(`${serverUrl()}/api/health`, { cache: "no-store" }).catch(() => {});
 }
 
-export interface AiTestResult {
-  ok: boolean;
-  reason?: string;
-  ms?: number;
-  model?: string;
-  /** The address that answered (maybe with /v1 added). */
-  baseUrl?: string;
-  /** Models the endpoint offers, if it lists them. */
-  models?: string[];
-}
-
-/** "Verbindung testen": the server sends one tiny request to the endpoint and reports back. */
-export async function testAiEndpoint(body: { baseUrl: string; auth: string; key: string; model: string }): Promise<AiTestResult> {
-  const res = await fetch(`${serverUrl()}/api/ai/test`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  }).catch(() => null);
-  if (!res) return { ok: false, reason: "server_offline" };
-  if (res.status === 429) return { ok: false, reason: "rate_limited" };
-  return ((await res.json().catch(() => null)) as AiTestResult | null) ?? { ok: false, reason: "unreachable" };
-}
-
-/** The models the endpoint offers (the server asks its /models; free). */
-export async function loadAiModels(body: { baseUrl: string; auth: string; key: string }): Promise<AiTestResult> {
-  const res = await fetch(`${serverUrl()}/api/ai/models`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  }).catch(() => null);
-  if (!res) return { ok: false, reason: "server_offline", models: [] };
-  if (res.status === 429) return { ok: false, reason: "rate_limited", models: [] };
-  return ((await res.json().catch(() => null)) as AiTestResult | null) ?? { ok: false, reason: "unreachable", models: [] };
-}
-
 export async function createRoom(): Promise<string> {
   const res = await fetch(`${serverUrl()}/api/rooms`, { method: "POST" }).catch(() => null);
   if (!res) throw new Error("offline");

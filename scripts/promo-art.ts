@@ -36,7 +36,7 @@ const banner = page(1600, 800, `
   <div class="abs" style="left:80px;top:90px">
     <div class="title" style="font-size:150px">Scam with<span>your Bros</span></div>
     <p style="margin-top:34px;font-size:40px;color:#fff;text-shadow:4px 4px 0 #1b1530;max-width:660px;line-height:1.2">
-      Das absurdeste Callcenter der Welt. Quatscht KI-Anrufer weich und überlebt den Chef!</p>
+      Das absurdeste Callcenter der Welt. Quatscht schlaue Anrufer weich und überlebt den Chef!</p>
     <div style="margin-top:34px;display:flex;gap:16px;font-size:28px">
       <span class="chip">👥 2–8 Bros</span><span class="chip">🔑 Raumcode</span><span class="chip">🍞 100 % fiktiv</span>
     </div>

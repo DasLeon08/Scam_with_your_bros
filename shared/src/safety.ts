@@ -1,5 +1,5 @@
 /**
- * Text safety for everything players type and everything the AI says:
+ * Text safety for everything players type and everything the callers say:
  * no links, no e-mail addresses, no phone/card-like numbers and nothing that
  * looks like a voucher or key code that could be redeemed outside the game.
  * Real brand / bank names are swapped for a fantasy name.

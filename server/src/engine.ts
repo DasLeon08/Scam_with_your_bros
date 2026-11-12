@@ -29,7 +29,7 @@ import {
   type RoomState,
   type ServerMsg,
 } from "@bros/shared";
-import type { CallerBrain } from "./brain";
+import { createMind, type CallerBrain, type CallerMind } from "./brain";
 
 export interface EngineIO {
   now(): number;
@@ -56,6 +56,8 @@ interface Player {
 
 interface Call {
   id: string;
+  /** The caller's memory of this conversation. */
+  mind: CallerMind;
   persona: Persona;
   playerId: string;
   schemeId: string | null;
@@ -112,13 +114,6 @@ export class GameEngine {
     this.code = code;
     this.io = io;
     this.bossLine = this.pick(BOSS.lobby);
-  }
-
-  /** Swaps how callers answer (e.g. the host added their own AI key). */
-  setBrain(brain: CallerBrain) {
-    this.io.brain = brain;
-    this.touch();
-    this.flush();
   }
 
   isHost(id: string) {
@@ -467,6 +462,7 @@ export class GameEngine {
     const bonus = this.owned.includes("headset") ? RULES.headsetBonus : 0;
     this.calls.push({
       id: q.id,
+      mind: createMind(),
       persona,
       playerId: p.id,
       schemeId: null,
@@ -547,9 +543,9 @@ export class GameEngine {
 
     let reply;
     try {
-      reply = await this.io.brain.respond({ persona, scheme, trust: call.trust, turn: call.turns, history, message: text, intelHit });
+      reply = await this.io.brain.respond({ persona, scheme, trust: call.trust, turn: call.turns, history, message: text, intelHit, mind: call.mind, playerName: p.name });
     } catch {
-      reply = { reply: this.pick(persona.lines.neutral), delta: 0, hangUp: false, source: "script" as const };
+      reply = { reply: this.pick(persona.lines.neutral), delta: 0, hangUp: false };
     }
     call.thinking = false;
     if (call.ended) return; // day ended or player left meanwhile
@@ -789,7 +785,6 @@ export class GameEngine {
       owned: this.owned,
       votes: this.votes,
       schemes: this.schemes,
-      ai: this.io.brain.ai,
     };
   }
 }

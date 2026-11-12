@@ -15,9 +15,7 @@ import {
   type RoomState,
 } from "@bros/shared";
 import * as art from "./art";
-import { AI_KEY_RE, AI_MODEL_RE, AI_PROVIDERS, providerById, type AiAuth } from "@bros/shared";
-import { clearAiSettings, loadAiSettings, maskKey, saveAiSettings, type AiSettings } from "./keystore";
-import { Connection, createRoom, inToki, linkCode, onTokiHost, onTokiName, loadAiModels, tellToki, testAiEndpoint, tokiScore, wakeServer, type Profile } from "./net";
+import { Connection, createRoom, inToki, linkCode, onTokiHost, onTokiName, tellToki, tokiScore, wakeServer, type Profile } from "./net";
 import { TUTORIAL, markTutorialDone, tutorialDone } from "./tutorial";
 
 /* ================================================================== */
@@ -33,10 +31,6 @@ let busy = false;
 let lastCallId: string | null = null;
 let resultCall: CallView | null = null;
 let nameTouched = false;
-let aiSettings: AiSettings | null = null;
-/** Room + host term the own key was sent for, so it goes once per room as host. */
-let keySentFor = "";
-let aiChecking = false;
 let scored = "";
 const invited = normalizeCode(linkCode());
 
@@ -113,13 +107,10 @@ function join(code: string) {
       titleError = "";
       tellToki(state.code);
       render();
-      keySentFor = ""; // a (re)connect: the server forgot the key when the connection dropped
-      maybeSendKey();
     },
     onState(state) {
       S = state;
       render();
-      maybeSendKey();
     },
     onEvent: onEvent,
     onError(code) {
@@ -156,19 +147,6 @@ async function createAndJoin() {
   }
 }
 
-function maybeSendKey() {
-  if (!S || !aiSettings) return;
-  const term = `${S.code}:${isHost()}`;
-  if (!isHost()) {
-    keySentFor = term;
-    return;
-  }
-  if (keySentFor === term) return;
-  keySentFor = term;
-  aiChecking = true;
-  send({ t: "aiKey", key: aiSettings.key, model: aiSettings.model, baseUrl: aiSettings.baseUrl, auth: aiSettings.auth });
-}
-
 function leave(error = "") {
   conn?.close();
   conn = null;
@@ -176,7 +154,6 @@ function leave(error = "") {
   me = "";
   lastCallId = null;
   resultCall = null;
-  keySentFor = "";
   titleError = error;
   tellToki(null);
   render();
@@ -214,31 +191,7 @@ function onEvent(e: GameEvent) {
     case "filtered":
       toast("🚫 Links, Codes und Nummern sind im Chat nicht erlaubt.", "bad");
       break;
-    case "aiKey": {
-      aiChecking = false;
-      const msg = e.ok ? "🤖 KI-Anrufer sind an: Dein eigener Endpunkt wird für diesen Raum benutzt." : `${aiProblem(e.reason)} Die Skript-Anrufer übernehmen.`;
-      toast(msg, e.ok ? "good" : "bad");
-      setAiStatus(msg, !e.ok);
-      if (e.ok) setTimeout(() => $(".ai-modal") && ($("#overlay")!.innerHTML = ""), 1200);
-      break;
-    }
   }
-}
-
-function aiProblem(reason: string | undefined): string {
-  return (
-    {
-      bad_key: "Der Anbieter hat den Key abgelehnt.",
-      bad_model: "Der Anbieter kennt dieses Modell nicht. Prüf den Modellnamen.",
-      bad_url: "Unter dieser Adresse antwortet kein OpenAI-kompatibler Endpunkt (https://…/v1).",
-      blocked_url: "Interne Adressen (localhost, private IPs) sind nicht erlaubt. Der Endpunkt muss öffentlich per https erreichbar sein.",
-      unreachable: "Der Endpunkt ist gerade nicht erreichbar.",
-      bad_format: "Das sieht nicht wie ein gültiger Key aus.",
-      not_host: "Nur der Host kann die KI-Anrufer einschalten.",
-      rate_limited: "Zu viele Tests hintereinander. Warte eine Minute.",
-      server_offline: "Der Spielserver ist nicht erreichbar (er wacht vielleicht gerade auf). Versuch es gleich nochmal.",
-    } as Record<string, string>
-  )[reason ?? "unreachable"] ?? "Das hat nicht geklappt.";
 }
 
 /* ================================================================== */
@@ -277,7 +230,7 @@ function mountTitle(): Mounted {
       <h1 class="bigtitle">Scam with<span>your Bros</span></h1>
       <p class="tagline">Willkommen bei <b style="color:var(--mustard)">Bros Inc.</b> – dem absurdesten Callcenter der Welt. Erfinde Maschen, quatsch Fantasie-Anrufer weich und überlebe die Bewertung vom Chef.</p>
       <div style="margin-top:22px; display:flex; gap:10px; flex-wrap:wrap">
-        <span class="chip">👥 2–8 Spieler</span><span class="chip">🔑 Nur mit Raumcode</span><span class="chip">🤖 KI- oder Skript-Anrufer</span><span class="chip">🍞 100 % fiktiv</span>
+        <span class="chip">👥 2–8 Spieler</span><span class="chip">🔑 Nur mit Raumcode</span><span class="chip">🧠 Schlaue Anrufer</span><span class="chip">🍞 100 % fiktiv</span>
       </div>
       <div class="building">${art.building()}</div>
     </div>
@@ -292,8 +245,7 @@ function mountTitle(): Mounted {
       <input id="code" class="input code-in" maxlength="5" placeholder="CODE" value="${esc(linkCode())}" aria-label="Raumcode">
       <button type="submit" class="btn ${invited ? "pink" : ""}" id="join-btn">${invited ? `Raum ${invited} beitreten` : "Beitreten"}</button>
       <div class="err" id="title-err" role="status"></div>
-      <div class="row"><button type="button" class="btn ghost sm" data-act="aisettings" id="ai-btn" style="flex:1; white-space:nowrap; font-size:15px">🤖 <span id="ai-label">…</span></button>
-        <button type="button" class="btn ghost sm" data-act="tutorial" title="Kurze Anleitung">❓ So geht's</button></div>
+      <button type="button" class="btn ghost sm" data-act="tutorial" title="Kurze Anleitung">❓ So geht's</button>
     </form>
   </section>`;
   const codeIn = $<HTMLInputElement>("#code")!;
@@ -310,8 +262,6 @@ function mountTitle(): Mounted {
       $("#colors")!.innerHTML = COLORS.map((c) => `<button type="button" data-act="color" data-v="${c}" class="${c === profile.color ? "sel" : ""}" style="background:${c}" aria-label="Farbe ${c}"></button>`).join("");
       $("#hairs")!.innerHTML = HAIRS.map((h) => `<button type="button" data-act="hair" data-v="${h}" class="${h === profile.hair ? "sel" : ""}" aria-label="Frisur ${h}">${art.bro(profile.color, h, 40)}</button>`).join("");
       renderTitleError(titleError);
-      const label = $("#ai-label");
-      if (label) label.textContent = aiSettings ? `KI: ${providerById(aiSettings.provider).name.split(" (")[0]}` : "Skript-Anrufer (gratis)";
     },
   };
 }
@@ -350,7 +300,7 @@ function mountLobby(): Mounted {
   stage.innerHTML = `
   <section class="screen lobby">
     <div class="panel codebox">
-      <div class="row"><h2 style="font-size:30px">Dein Raum</h2><button class="chip aibadge" id="aimode" data-act="aisettings" style="margin-left:auto" title="KI-Einstellungen"></button></div>
+      <div class="row"><h2 style="font-size:30px">Dein Raum</h2><span class="chip" style="margin-left:auto">🧠 Schlaue Anrufer</span></div>
       <div class="code-big" id="code-big"></div>
       <div class="row"><button class="btn ghost sm" data-act="copy">📋 Code kopieren</button><button class="btn ghost sm" data-act="tutorial">❓ So geht's</button><button class="btn ghost sm" data-act="leave">🚪</button></div>
       <p class="hint">${inToki ? "Teile den Code oder nutze «Invite friends» auf Toki. " : ""}Freunde treten nur mit diesem Code bei. Es gibt keine öffentlichen Räume und kein Matchmaking.</p>
@@ -370,7 +320,6 @@ function mountLobby(): Mounted {
     update() {
       const s = S!;
       $("#code-big")!.textContent = s.code;
-      $("#aimode")!.textContent = `${s.ai ? "🤖 KI-Anrufer" : "📜 Skript-Anrufer"} ⚙️`;
       const online = s.players.filter((p) => p.connected);
       $("#count")!.textContent = `${online.length} / ${RULES.maxPlayers}`;
       const cards = online.map(
@@ -436,7 +385,6 @@ function mountDay(): Mounted {
         <div class="clock"><span style="font-size:24px">🕑</span><b>Tag ${s.day} · <span data-clock></span></b></div>
         <div class="quota"><span class="display" style="font-size:18px">Quote</span>
           <div class="bar"><i style="width:${Math.min(100, (s.bucks / s.quota) * 100)}%; background:${s.bucks >= s.quota ? "var(--mustard)" : "var(--mint)"}"></i><span>${s.bucks} / ${s.quota} Bro-Bucks${s.bucks >= s.quota ? " ✔" : ""}</span></div></div>
-        <span class="chip aibadge" title="${s.ai ? "Anrufer antworten mit KI" : "Anrufer antworten mit Skript"}">${s.ai ? "🤖 KI" : "📜 Skript"}</span>
         <span class="roomchip" title="Raumcode">${esc(s.code)}</span>
         <div class="avs">${s.players.map((p) => `<span class="${p.connected ? "" : "off"}" title="${esc(p.name)}">${art.bro(p.color, p.hair, 38)}</span>`).join("")}</div>
         ${isHost() ? `<button class="btn xs ghost" data-act="endday" title="Schicht für alle beenden">🔔 Feierabend</button>` : ""}
@@ -739,196 +687,6 @@ function mountShop(): Mounted {
   };
 }
 
-/* ---------------- AI settings ---------------- */
-
-function setAiStatus(text: string, bad = false) {
-  const el = $("#ai-status");
-  if (el) {
-    el.textContent = text;
-    el.style.color = bad ? "var(--red)" : "var(--teal)";
-  }
-}
-
-function showAiSettings() {
-  const box = $("#overlay");
-  if (!box) return;
-  const inRoom = !!S;
-  const cur = aiSettings ?? { provider: "openai", baseUrl: AI_PROVIDERS[0].baseUrl, auth: "bearer" as AiAuth, key: "", model: AI_PROVIDERS[0].model };
-  box.innerHTML = `<div class="overlay"><div class="dim" data-act="aiclose"></div>
-    <form class="panel modal ai-modal" data-form="ai" autocomplete="off">
-      <h2 style="font-size:26px">🤖 KI-Anrufer</h2>
-      <p style="font-size:13px">Optional. <b>Ohne Key</b> antworten Skript-Anrufer, gratis. <b>Mit eigenem Key</b> antworten die Anrufer mit KI,
-        über jeden OpenAI-kompatiblen Anbieter oder deinen eigenen Endpunkt. Die Kosten gehen auf dein Konto beim Anbieter.</p>
-      ${aiSettings ? `<div class="chip" style="align-self:flex-start">Gespeichert: ${esc(providerById(aiSettings.provider).name.split(" (")[0])} · ${esc(maskKey(aiSettings.key))} · ${esc(aiSettings.model)}</div>` : ""}
-      <div class="ai-grid">
-        <label for="ai-provider">Anbieter</label>
-        <select id="ai-provider" class="input">${AI_PROVIDERS.map((p) => `<option value="${p.id}" ${p.id === cur.provider ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select>
-        <label for="ai-url">Endpunkt</label>
-        <input id="ai-url" class="input mono" value="${esc(cur.baseUrl)}" spellcheck="false" placeholder="https://…/v1">
-        <label for="ai-auth">Anmeldung</label>
-        <select id="ai-auth" class="input">
-          <option value="bearer" ${cur.auth === "bearer" ? "selected" : ""}>Authorization: Bearer &lt;Key&gt; (Standard)</option>
-          <option value="api-key" ${cur.auth === "api-key" ? "selected" : ""}>api-key: &lt;Key&gt; (Azure)</option>
-          <option value="none" ${cur.auth === "none" ? "selected" : ""}>Ohne Key</option>
-        </select>
-        <label for="ai-key">API-Key</label>
-        <input id="ai-key" class="input" type="password" spellcheck="false" placeholder="${aiSettings ? "leer lassen = gespeicherten Key behalten (gleicher Anbieter)" : esc(providerById(cur.provider).keyHint)}">
-        <label for="ai-model">Modell</label>
-        <div class="row"><input id="ai-model" class="input mono" value="${esc(cur.model)}" spellcheck="false" list="ai-model-list" placeholder="Modell wählen oder eintippen">
-          <button type="button" class="btn ghost sm" data-act="aimodels" style="white-space:nowrap">📋 Modelle laden</button></div>
-        <datalist id="ai-model-list"></datalist>
-      </div>
-      <p class="hint" style="font-size:12px">Der Endpunkt ist die Adresse vor <span class="mono">/chat/completions</span>.
-        🔒 Der Key bleibt auf diesem Gerät. Er geht nur an den Spielserver und nur für deinen Raum, wenn du Host bist.
-        Er geht nie an Mitspieler und wird nicht in dein Toki-Konto synchronisiert.</p>
-      <div class="ai-models" id="ai-models"></div>
-      <div class="err" id="ai-status" role="status">${aiChecking ? "Endpunkt wird geprüft…" : inRoom && !isHost() ? "Deine Einstellung wird benutzt, sobald du Host eines Raums bist." : ""}</div>
-      <div class="row" style="justify-content:flex-end; flex-wrap:wrap">
-        ${aiSettings ? `<button type="button" class="btn ghost sm" data-act="aiclear">Entfernen</button>` : ""}
-        <button type="button" class="btn ghost sm" data-act="aiclose">Schliessen</button>
-        <button type="button" class="btn mint sm" data-act="aitest">🔌 Verbindung testen</button>
-        <button class="btn pink sm">Speichern</button>
-      </div>
-    </form></div>`;
-  // picking a provider fills in its address, model and login type
-  $<HTMLSelectElement>("#ai-provider")!.addEventListener("change", (e) => {
-    const p = providerById((e.target as HTMLSelectElement).value);
-    $<HTMLInputElement>("#ai-url")!.value = p.baseUrl;
-    $<HTMLInputElement>("#ai-model")!.value = p.model;
-    $<HTMLSelectElement>("#ai-auth")!.value = p.auth;
-    $<HTMLInputElement>("#ai-key")!.placeholder = p.keyHint;
-    showModelChoices([], "");
-    if (p.editUrl) setTimeout(() => $<HTMLInputElement>("#ai-url")?.focus(), 0);
-    else void loadModelsFromForm(true);
-  });
-  // models show up by themselves as soon as endpoint and key are known
-  const auto = () => void loadModelsFromForm(true);
-  $<HTMLInputElement>("#ai-key")!.addEventListener("change", auto);
-  $<HTMLInputElement>("#ai-url")!.addEventListener("change", auto);
-  $<HTMLSelectElement>("#ai-auth")!.addEventListener("change", auto);
-  if (aiSettings) auto();
-  setTimeout(() => $<HTMLSelectElement>("#ai-provider")?.focus(), 0);
-}
-
-/** Reads and checks the dialog; null (with a message) when something is missing. */
-function aiFromForm(): AiSettings | null {
-  const provider = $<HTMLSelectElement>("#ai-provider")!.value;
-  const baseUrl = $<HTMLInputElement>("#ai-url")!.value.trim().replace(/\/+$/, "");
-  const auth = $<HTMLSelectElement>("#ai-auth")!.value as AiAuth;
-  const typed = $<HTMLInputElement>("#ai-key")!.value.trim();
-  const model = $<HTMLInputElement>("#ai-model")!.value.trim();
-  const key = auth === "none" ? "" : typed || savedKeyFor(baseUrl);
-  if (!/^https:\/\/[^/\s]+\.[^/\s]+/.test(baseUrl) || baseUrl.includes("DEIN-")) {
-    setAiStatus("Der Endpunkt muss eine öffentliche https-Adresse sein, z. B. https://api.openai.com/v1.", true);
-    return null;
-  }
-  if (auth !== "none" && !AI_KEY_RE.test(key)) {
-    setAiStatus("Bitte einen gültigen API-Key eintragen (ohne Leerzeichen).", true);
-    return null;
-  }
-  if (!AI_MODEL_RE.test(model)) {
-    setAiStatus("Bitte einen Modellnamen eintragen, z. B. gpt-4o-mini.", true);
-    return null;
-  }
-  return { provider, baseUrl, auth, key, model };
-}
-
-async function testAiFromForm() {
-  const v = aiFromForm();
-  if (!v) return;
-  const btn = $<HTMLButtonElement>("[data-act=aitest]");
-  if (btn) btn.disabled = true;
-  setAiStatus("🔌 Teste die Verbindung…");
-  const r = await testAiEndpoint({ baseUrl: v.baseUrl, auth: v.auth, key: v.key, model: v.model });
-  if (btn) btn.disabled = false;
-  // the server may have found the endpoint one level deeper (…/v1): take that address
-  let fixed = "";
-  if (r.baseUrl && r.baseUrl !== v.baseUrl) {
-    $<HTMLInputElement>("#ai-url")!.value = r.baseUrl;
-    fixed = ` Die Adresse wurde auf ${r.baseUrl} ergänzt.`;
-  }
-  showModelChoices(r.models ?? [], v.model);
-  if (r.ok) setAiStatus(`✅ Verbindung klappt! Modell «${r.model ?? v.model}» hat in ${((r.ms ?? 0) / 1000).toFixed(1)} s geantwortet.${fixed} Jetzt «Speichern».`);
-  else if (r.reason === "bad_model" && r.models?.length) setAiStatus(`❌ Das Modell «${v.model}» gibt es dort nicht. Wähl oben eins aus und teste nochmal.${fixed}`, true);
-  else setAiStatus(`❌ ${aiProblem(r.reason)}${fixed}`, true);
-}
-
-/** Models the endpoint offers, as buttons that fill in the model field (all of them, scrollable). */
-function showModelChoices(models: string[], current: string) {
-  const box = $("#ai-models");
-  const list = $("#ai-model-list");
-  if (list) list.innerHTML = models.map((m) => `<option value="${esc(m)}"></option>`).join("");
-  if (!box) return;
-  box.innerHTML = models.length
-    ? `<span class="hint" style="font-size:12px">${models.length} Modell${models.length === 1 ? "" : "e"} verfügbar:</span> ${models
-        .map((m) => `<button type="button" class="chip ${m === current ? "on" : ""}" data-act="aimodel" data-v="${esc(m)}">${esc(m)}</button>`)
-        .join("")}`
-    : "";
-}
-
-/** The saved key, but only for the host it was saved for: never send one provider's key to another. */
-function savedKeyFor(baseUrl: string): string {
-  if (!aiSettings?.key) return "";
-  try {
-    return new URL(baseUrl).host === new URL(aiSettings.baseUrl).host ? aiSettings.key : "";
-  } catch {
-    return "";
-  }
-}
-
-/** Endpoint, login and key from the dialog, without the model (for loading the model list). */
-function endpointFromForm(): { baseUrl: string; auth: AiAuth; key: string } | null {
-  const baseUrl = $<HTMLInputElement>("#ai-url")?.value.trim().replace(/\/+$/, "") ?? "";
-  const auth = ($<HTMLSelectElement>("#ai-auth")?.value ?? "bearer") as AiAuth;
-  const key = auth === "none" ? "" : $<HTMLInputElement>("#ai-key")?.value.trim() || savedKeyFor(baseUrl);
-  if (!/^https:\/\/[^/\s]+\.[^/\s]+/.test(baseUrl) || baseUrl.includes("DEIN-")) return null;
-  if (auth !== "none" && !AI_KEY_RE.test(key)) return null;
-  return { baseUrl, auth, key };
-}
-
-let modelsRequest = 0;
-/** Loads the model list; quiet = automatic (no complaint when key or address are still missing). */
-async function loadModelsFromForm(quiet: boolean) {
-  const ep = endpointFromForm();
-  if (!ep) {
-    if (!quiet) setAiStatus("Für die Modell-Liste braucht es Endpunkt und Key.", true);
-    return;
-  }
-  const id = ++modelsRequest;
-  setAiStatus("📋 Lade die Modelle…");
-  const r = await loadAiModels(ep);
-  if (id !== modelsRequest || !$(".ai-modal")) return; // a newer request or the dialog is closed
-  if (r.baseUrl && r.baseUrl !== ep.baseUrl) $<HTMLInputElement>("#ai-url")!.value = r.baseUrl;
-  const model = $<HTMLInputElement>("#ai-model")?.value.trim() ?? "";
-  showModelChoices(r.models ?? [], model);
-  if (r.ok && r.models?.length) {
-    // the typed model isn't offered: take the first one so the field is never wrong
-    if (!r.models.includes(model)) {
-      $<HTMLInputElement>("#ai-model")!.value = r.models[0];
-      showModelChoices(r.models, r.models[0]);
-    }
-    setAiStatus(`📋 ${r.models.length} Modell${r.models.length === 1 ? "" : "e"} gefunden. Klick eins an, dann «Verbindung testen» oder «Speichern».`);
-  } else if (r.ok) setAiStatus("Der Endpunkt nennt keine Modelle. Trag den Modellnamen selbst ein.");
-  else setAiStatus(`❌ ${aiProblem(r.reason)}`, true);
-}
-
-async function saveAiFromForm() {
-  const v = aiFromForm();
-  if (!v) return;
-  aiSettings = v;
-  await saveAiSettings(aiSettings);
-  $<HTMLInputElement>("#ai-key")!.value = "";
-  keySentFor = "";
-  if (S && isHost()) {
-    setAiStatus("Gespeichert. Endpunkt wird geprüft…");
-    maybeSendKey();
-  } else {
-    setAiStatus("Gespeichert. Wird benutzt, sobald du einen Raum hostest.");
-    setTimeout(() => ($("#overlay")!.innerHTML = ""), 1200);
-  }
-  screen?.update();
-}
-
 /* ---------------- tutorial ---------------- */
 
 function showTutorial(step = 0) {
@@ -1078,22 +836,6 @@ stage.addEventListener("click", async (e) => {
     case "unbait":
       $("#overlay")!.innerHTML = "";
       break;
-    case "aisettings":
-      showAiSettings();
-      break;
-    case "aitest":
-      void testAiFromForm();
-      break;
-    case "aimodels":
-      void loadModelsFromForm(false);
-      break;
-    case "aimodel": {
-      const field = $<HTMLInputElement>("#ai-model");
-      if (field) field.value = v;
-      stage.querySelectorAll("#ai-models .chip").forEach((c) => c.classList.toggle("on", (c as HTMLElement).dataset.v === v));
-      setAiStatus(`Modell «${v}» gewählt. Teste nochmal oder speichere.`);
-      break;
-    }
     case "tutorial":
       showTutorial(0);
       break;
@@ -1108,18 +850,6 @@ stage.addEventListener("click", async (e) => {
       break;
     case "tutskip":
       closeTutorial();
-      break;
-    case "aiclose":
-      $("#overlay")!.innerHTML = "";
-      break;
-    case "aiclear":
-      await clearAiSettings();
-      aiSettings = null;
-      if (S && isHost()) send({ t: "aiKey", key: null });
-      keySentFor = "";
-      $("#overlay")!.innerHTML = "";
-      toast("Key entfernt. Skript-Anrufer übernehmen.", "good");
-      screen?.update();
       break;
   }
 });
@@ -1147,9 +877,6 @@ stage.addEventListener("submit", (e) => {
       input.value = "";
       break;
     }
-    case "ai":
-      void saveAiFromForm();
-      break;
     case "say": {
       const input = $<HTMLInputElement>("#say")!;
       const call = myCall();
@@ -1192,11 +919,6 @@ window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeTutorial();
   else if (e.key === "ArrowRight") step >= TUTORIAL.length - 1 ? closeTutorial() : showTutorial(step + 1);
   else if (e.key === "ArrowLeft" && step > 0) showTutorial(step - 1);
-});
-loadAiSettings().then((v) => {
-  aiSettings = v;
-  screen?.update();
-  maybeSendKey();
 });
 
 // Toki: "Invite friends" before a room exists opens one; the Toki name fills in the name field

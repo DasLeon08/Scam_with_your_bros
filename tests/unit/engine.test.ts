@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { PERSONAS, type RoomState, type ServerMsg } from "../../shared/src";
-import { ScriptedBrain } from "../../server/src/brain";
+import { SmartBrain } from "../../server/src/brain";
 import { GameEngine } from "../../server/src/engine";
 
 function setup(daySeconds = 120) {
@@ -13,7 +13,7 @@ function setup(daySeconds = 120) {
   const eng = new GameEngine("K7QX2", {
     now: () => t,
     random,
-    brain: new ScriptedBrain(() => 0.6),
+    brain: new SmartBrain({ random: () => 0.6 }),
     daySecondsOverride: daySeconds,
     send: (to, msg) => sent.push({ to, msg }),
     broadcast: (msg) => {

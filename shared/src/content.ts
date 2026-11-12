@@ -31,7 +31,7 @@ export interface Persona {
   dislikes: string[];
   schemeAffinity: Record<string, number>;
   intel: Intel[];
-  /** Personality notes for the AI. */
+  /** Short personality summary (for writers; the voice itself lives in server/src/brain.ts). */
   prompt: string;
   lines: {
     greet: string[];

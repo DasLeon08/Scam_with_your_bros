@@ -3,14 +3,12 @@ export interface ServerConfig {
   port: number;
   host: string;
   allowedOrigins: string;
-  rateLimitPerMinute: number;
-  rateLimitPerRoom: number;
   testDaySeconds?: number;
   /** Trust X-Forwarded-For (behind Render, Railway, Fly, nginx …). */
   trustProxy: boolean;
   env: Record<string, string | undefined>;
-  /** For tests: how the server talks to the AI endpoint. */
-  fetchFn?: typeof fetch;
+  /** How long callers "think" before answering, in ms (tests use 0; default 0.5–1.4 s). */
+  thinkMs?: number;
 }
 
 export const DEFAULT_ORIGINS =
@@ -25,8 +23,7 @@ export function configFromEnv(env: Record<string, string | undefined> = process.
     port: num("PORT", 8787),
     host: env.HOST || "0.0.0.0",
     allowedOrigins: env.ALLOWED_ORIGINS || DEFAULT_ORIGINS,
-    rateLimitPerMinute: num("RATE_LIMIT_PER_MINUTE", 20),
-    rateLimitPerRoom: num("RATE_LIMIT_PER_ROOM", 400),
+    thinkMs: env.THINK_MS !== undefined && env.THINK_MS !== "" ? Math.max(0, Number(env.THINK_MS) || 0) : undefined,
     testDaySeconds: Number(env.TEST_DAY_SECONDS) > 0 ? Number(env.TEST_DAY_SECONDS) : undefined,
     trustProxy: env.TRUST_PROXY !== "false",
     env,

@@ -136,7 +136,6 @@ export interface RoomState {
   owned: string[];
   votes: Record<string, string[]>;
   schemes: string[];
-  ai: boolean;
 }
 
 export type ClientMsg =
@@ -156,7 +155,6 @@ export type ClientMsg =
   | { t: "vote"; itemId: string }
   | { t: "buy"; itemId: string }
   | { t: "nextDay" }
-  | { t: "aiKey"; key: string | null; model?: string; baseUrl?: string; auth?: "bearer" | "api-key" | "none" }
   | { t: "ping"; c: number };
 
 export type GameEvent =
@@ -168,9 +166,6 @@ export type GameEvent =
   | { kind: "missed"; name: string }
   | { kind: "bought"; itemId: string }
   | { kind: "filtered" }
-  | { kind: "aiKey"; ok: boolean; reason?: AiKeyProblem };
-
-export type AiKeyProblem = "bad_key" | "bad_model" | "bad_url" | "blocked_url" | "unreachable" | "not_host" | "bad_format";
 
 export type ServerMsg =
   | { t: "welcome"; you: string; token: string; state: RoomState }

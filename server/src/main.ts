@@ -1,9 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { CLOSE, normalizeCode } from "@bros/shared";
 import { WebSocketServer, type WebSocket } from "ws";
-import { findModels, llmConfigFromEnv, probeEndpoint } from "./brain";
-import { endpointFromInput } from "./endpoint";
-import { safeFetch } from "./netguard";
 import { configFromEnv, originAllowed, type ServerConfig } from "./config";
 import { loadDotEnv } from "./dotenv";
 import { RoomRegistry } from "./rooms";
@@ -24,31 +21,6 @@ function creationLimiter(perMinute = 10) {
 export function startServer(cfg: ServerConfig = configFromEnv()) {
   const rooms = new RoomRegistry(cfg);
   const allowCreate = creationLimiter();
-  const allowTest = creationLimiter(6);
-  const allowModels = creationLimiter(20);
-
-  /** Reads a small JSON body (the AI settings), or null. */
-  const readJson = (req: IncomingMessage) =>
-    new Promise<Record<string, unknown> | null>((resolve) => {
-      let raw = "";
-      req.on("data", (c: Buffer) => {
-        raw += c;
-        if (raw.length > 8192) {
-          req.destroy();
-          resolve(null);
-        }
-      });
-      req.on("end", () => {
-        try {
-          resolve(JSON.parse(raw || "{}"));
-        } catch {
-          resolve(null);
-        }
-      });
-      req.on("error", () => resolve(null));
-    });
-  const ai = llmConfigFromEnv(cfg.env) !== null;
-
   const clientIp = (req: IncomingMessage) => {
     const fwd = cfg.trustProxy ? String(req.headers["x-forwarded-for"] ?? "").split(",")[0].trim() : "";
     return fwd || req.socket.remoteAddress || "?";
@@ -76,51 +48,7 @@ export function startServer(cfg: ServerConfig = configFromEnv()) {
     if (req.method === "OPTIONS") return reply(res, allowed ? 204 : 403, null, cors);
     if (!allowed) return reply(res, 403, { error: "origin_not_allowed" });
 
-    if (path === "/api/health" || path === "/") return reply(res, 200, { ok: true, ai, rooms: rooms.count }, cors);
-
-    // "Verbindung testen" in the AI settings: one tiny request to the player's endpoint.
-    // The key is used for this one check only: not stored, not logged, not sent anywhere else.
-    if (path === "/api/ai/test" && req.method === "POST") {
-      if (!allowTest(clientIp(req))) return reply(res, 429, { ok: false, reason: "rate_limited" }, cors);
-      let raw = "";
-      let tooBig = false;
-      req.on("data", (c: Buffer) => {
-        raw += c;
-        if (raw.length > 8192) {
-          tooBig = true;
-          req.destroy();
-        }
-      });
-      req.on("end", async () => {
-        if (tooBig) return;
-        let body: Record<string, unknown> = {};
-        try {
-          body = JSON.parse(raw || "{}");
-        } catch {
-          return reply(res, 400, { ok: false, reason: "bad_format" }, cors);
-        }
-        const input = endpointFromInput(body);
-        if (!input.ok) return reply(res, 200, { ok: false, reason: input.reason }, cors);
-        const started = Date.now();
-        const probe = await probeEndpoint(input.cfg, cfg.fetchFn ?? safeFetch);
-        const ok = probe.check === "ok";
-        reply(res, 200, { ok, reason: ok ? undefined : probe.check, ms: Date.now() - started, model: input.cfg.model, baseUrl: probe.baseUrl, models: probe.models }, cors);
-      });
-      return;
-    }
-
-    // The model list of the player's endpoint, for the model picker (GET /models there, no cost).
-    if (path === "/api/ai/models" && req.method === "POST") {
-      if (!allowModels(clientIp(req))) return reply(res, 429, { ok: false, reason: "rate_limited", models: [] }, cors);
-      readJson(req).then(async (body) => {
-        if (!body) return reply(res, 400, { ok: false, reason: "bad_format", models: [] }, cors);
-        const input = endpointFromInput({ ...body, model: "x" });
-        if (!input.ok) return reply(res, 200, { ok: false, reason: input.reason, models: [] }, cors);
-        const r = await findModels(input.cfg, cfg.fetchFn ?? safeFetch);
-        reply(res, 200, r, cors);
-      });
-      return;
-    }
+    if (path === "/api/health" || path === "/") return reply(res, 200, { ok: true, rooms: rooms.count }, cors);
 
     if (path === "/api/rooms" && req.method === "POST") {
       req.resume();
@@ -168,7 +96,7 @@ export function startServer(cfg: ServerConfig = configFromEnv()) {
   });
 
   http.listen(cfg.port, cfg.host, () => {
-    console.log(`Bros Inc. server on http://${cfg.host}:${cfg.port} · callers: ${ai ? "AI" : "scripted"}`);
+    console.log(`Bros Inc. server on http://${cfg.host}:${cfg.port} · smart callers`);
   });
 
   const stop = () => {

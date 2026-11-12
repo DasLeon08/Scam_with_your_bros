@@ -1,6 +1,6 @@
 import { defineConfig } from "@playwright/test";
 
-// The e2e run uses its own ports, scripted callers (no AI) and a short day.
+// The e2e run uses its own ports, quick-thinking callers and a short day.
 export const SERVER = "http://127.0.0.1:8788";
 export const CLIENT = "http://127.0.0.1:5174";
 
@@ -13,11 +13,11 @@ export default defineConfig({
   use: { viewport: { width: 1280, height: 720 }, trace: "off" },
   webServer: [
     {
-      // scripted callers (no AI keys, no .env) and a short day
+      // no .env, callers think only briefly, a short day
       command: "npx tsx src/main.ts",
       cwd: "server",
       url: `${SERVER}/api/health`,
-      env: { PORT: "8788", HOST: "127.0.0.1", TEST_DAY_SECONDS: "75", NO_DOTENV: "1", OPENAI_API_KEY: "", LLM_BASE_URL: "", LLM_API_KEY: "" },
+      env: { PORT: "8788", HOST: "127.0.0.1", TEST_DAY_SECONDS: "75", NO_DOTENV: "1", THINK_MS: "150" },
       reuseExistingServer: false,
       timeout: 60_000,
     },
