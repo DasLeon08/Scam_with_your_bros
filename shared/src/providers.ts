@@ -18,7 +18,6 @@ export interface AiProvider {
 
 export const AI_PROVIDERS: AiProvider[] = [
   { id: "openai", name: "OpenAI", baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini", auth: "bearer", keyHint: "sk-…" },
-  { id: "tfbern", name: "ASK (TF Bern)", baseUrl: "https://ask.ict-tfbern.ch/api/v1", model: "gpt-4o-mini", auth: "bearer", keyHint: "ASK-API-Key" },
   { id: "openrouter", name: "OpenRouter (viele Modelle, auch Claude)", baseUrl: "https://openrouter.ai/api/v1", model: "openai/gpt-4o-mini", auth: "bearer", keyHint: "sk-or-…" },
   { id: "groq", name: "Groq", baseUrl: "https://api.groq.com/openai/v1", model: "llama-3.3-70b-versatile", auth: "bearer", keyHint: "gsk_…" },
   { id: "mistral", name: "Mistral", baseUrl: "https://api.mistral.ai/v1", model: "mistral-small-latest", auth: "bearer", keyHint: "Mistral-API-Key" },

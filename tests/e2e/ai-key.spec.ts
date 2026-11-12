@@ -14,9 +14,6 @@ test("own AI endpoint: providers, custom URL, kept on this device only, internal
   await expect(page.locator(".modal")).toContainText("nicht in dein Toki-Konto");
 
   // picking a provider fills in its endpoint and model
-  await page.selectOption("#ai-provider", "tfbern");
-  await expect(page.locator("#ai-url")).toHaveValue("https://ask.ict-tfbern.ch/api/v1");
-  await expect(page.locator("#ai-auth")).toHaveValue("bearer");
   await page.selectOption("#ai-provider", "groq");
   await expect(page.locator("#ai-url")).toHaveValue("https://api.groq.com/openai/v1");
   await page.selectOption("#ai-provider", "azure");
