@@ -24,9 +24,13 @@ export interface CallerBrain {
   respond(ctx: BrainContext): Promise<BrainReply>;
 }
 
+export type AiAuth = "bearer" | "api-key" | "none";
+
 export interface LlmConfig {
   baseUrl: string;
   apiKey: string;
+  /** How the key is sent: Authorization: Bearer (most providers), api-key header (Azure) or not at all. */
+  auth?: AiAuth;
   model: string;
   temperature: number;
   timeoutMs: number;
@@ -49,24 +53,50 @@ export function llmConfigFromEnv(env: Record<string, unknown>): LlmConfig | null
     baseUrl: explicitBase || OPENAI_BASE_URL,
     model: str("LLM_MODEL") || DEFAULT_MODEL,
     apiKey,
+    auth: str("LLM_AUTH") === "api-key" ? "api-key" : str("LLM_AUTH") === "none" ? "none" : "bearer",
     temperature: Number(env.LLM_TEMPERATURE ?? 0.9) || 0.9,
     timeoutMs: Number(env.LLM_TIMEOUT_MS ?? 15000) || 15000,
   };
 }
 
-/** OpenAI keys look like sk-… (also sk-proj-…). */
-export const OPENAI_KEY_RE = /^sk-[A-Za-z0-9_-]{20,200}$/;
+export function authHeaders(cfg: Pick<LlmConfig, "apiKey" | "auth">): Record<string, string> {
+  if (!cfg.apiKey || cfg.auth === "none") return {};
+  return cfg.auth === "api-key" ? { "api-key": cfg.apiKey } : { authorization: `Bearer ${cfg.apiKey}` };
+}
 
-/** Checks a key with OpenAI's cheapest call (list models). */
-export async function verifyOpenAiKey(key: string, fetchFn: typeof fetch = fetch, baseUrl = OPENAI_BASE_URL): Promise<"ok" | "bad_key" | "unreachable"> {
+export type EndpointCheck = "ok" | "bad_key" | "bad_model" | "bad_url" | "unreachable";
+
+/**
+ * Checks an endpoint with one tiny chat request (a few tokens). That works on every
+ * OpenAI-compatible endpoint, also those without /models, and proves the model name too.
+ */
+export async function verifyEndpoint(cfg: LlmConfig, fetchFn: typeof fetch = fetch): Promise<EndpointCheck> {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 8000);
+  const timer = setTimeout(() => ctrl.abort(), 15_000);
+  const messages = [{ role: "user", content: "Antworte nur mit: ok" }];
+  const post = (body: Record<string, unknown>) =>
+    fetchFn(`${cfg.baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "content-type": "application/json", ...authHeaders(cfg) },
+      signal: ctrl.signal,
+      body: JSON.stringify(body),
+    });
   try {
-    const res = await fetchFn(`${baseUrl}/models`, { headers: { authorization: `Bearer ${key}` }, signal: ctrl.signal });
-    if (res.ok) return "ok";
-    return res.status === 401 || res.status === 403 ? "bad_key" : "unreachable";
-  } catch {
+    let res = await post({ model: cfg.model, max_tokens: 5, messages });
+    if (res.status === 400) res = await post({ model: cfg.model, messages });
+    if (res.ok) {
+      const data = (await res.json().catch(() => null)) as { choices?: unknown[] } | null;
+      return Array.isArray(data?.choices) ? "ok" : "bad_url";
+    }
+    if (res.status === 401 || res.status === 403) return "bad_key";
+    if (res.status === 404 || res.status === 400 || res.status === 422) {
+      // 404 on the path itself means a wrong address; on the model it means a wrong model name
+      const text = (await res.text().catch(() => "")).toLowerCase();
+      return /model/.test(text) ? "bad_model" : "bad_url";
+    }
     return "unreachable";
+  } catch (e) {
+    return (e as Error).message === "blocked_url" || (e as Error).message === "bad_url" ? "bad_url" : "unreachable";
   } finally {
     clearTimeout(timer);
   }
@@ -194,8 +224,7 @@ export class LlmBrain implements CallerBrain {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), this.cfg.timeoutMs);
     try {
-      const headers: Record<string, string> = { "content-type": "application/json" };
-      if (this.cfg.apiKey) headers.authorization = `Bearer ${this.cfg.apiKey}`;
+      const headers: Record<string, string> = { "content-type": "application/json", ...authHeaders(this.cfg) };
       const messages = [
         { role: "system", content: system },
         { role: "user", content: user },

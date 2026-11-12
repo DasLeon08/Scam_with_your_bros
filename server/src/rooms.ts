@@ -1,5 +1,7 @@
 import { CLOSE, randomCode, type ClientMsg, type ServerMsg } from "@bros/shared";
-import { DEFAULT_MODEL, HybridBrain, LlmBrain, OPENAI_BASE_URL, OPENAI_KEY_RE, RoomLimiter, ScriptedBrain, llmConfigFromEnv, verifyOpenAiKey, type LlmConfig } from "./brain";
+import { AI_KEY_RE, AI_MODEL_RE, type AiKeyProblem } from "@bros/shared";
+import { DEFAULT_MODEL, HybridBrain, LlmBrain, OPENAI_BASE_URL, RoomLimiter, ScriptedBrain, llmConfigFromEnv, verifyEndpoint, type LlmConfig } from "./brain";
+import { checkAiUrl, safeFetch } from "./netguard";
 import type { ServerConfig } from "./config";
 import { GameEngine } from "./engine";
 
@@ -51,33 +53,42 @@ export class Room {
     this.expireIn(CREATE_TTL);
   }
 
-  private makeBrain(llm: LlmConfig | null) {
-    return new HybridBrain(llm ? new LlmBrain(llm, this.cfg.fetchFn) : null, new ScriptedBrain(), this.limiter, Date.now, (m) =>
+  /** Endpoints players type in go through the guarded fetch; the server's own setting is trusted. */
+  private get playerFetch() {
+    return this.cfg.fetchFn ?? safeFetch;
+  }
+
+  private makeBrain(llm: LlmConfig | null, fetchFn: typeof fetch = this.cfg.fetchFn ?? fetch) {
+    return new HybridBrain(llm ? new LlmBrain(llm, fetchFn) : null, new ScriptedBrain(), this.limiter, Date.now, (m) =>
       console.warn(`[${this.code}] ${m}`),
     );
   }
 
   /**
-   * The host's own OpenAI key for this room. It lives only in this room's memory: never stored,
-   * never logged, never sent to other players. null switches back to the server's setting.
+   * The host's own AI endpoint for this room (any OpenAI-compatible provider or a custom URL).
+   * The key lives only in this room's memory: never stored, never logged, never sent to other
+   * players. null switches back to the server's setting.
    */
-  private async setRoomKey(conn: Conn, rawKey: unknown, rawModel: unknown) {
-    const reply = (ok: boolean, reason?: "bad_key" | "unreachable" | "not_host" | "bad_format") =>
-      this.send(conn, { t: "event", event: { kind: "aiKey", ok, reason } });
+  private async setRoomKey(conn: Conn, msg: { key: unknown; model?: unknown; baseUrl?: unknown; auth?: unknown }) {
+    const reply = (ok: boolean, reason?: AiKeyProblem) => this.send(conn, { t: "event", event: { kind: "aiKey", ok, reason } });
     if (!conn.playerId || !this.engine.isHost(conn.playerId)) return reply(false, "not_host");
-    if (rawKey === null) {
+    if (msg.key === null) {
       this.keyOwner = null;
       this.engine.setBrain(this.makeBrain(this.serverLlm));
       return reply(true);
     }
-    const key = typeof rawKey === "string" ? rawKey.trim() : "";
-    if (!OPENAI_KEY_RE.test(key)) return reply(false, "bad_format");
-    const model = typeof rawModel === "string" && /^[A-Za-z0-9._:\/-]{1,64}$/.test(rawModel.trim()) ? rawModel.trim() : DEFAULT_MODEL;
-    const check = await verifyOpenAiKey(key, this.cfg.fetchFn);
+    const auth = msg.auth === "api-key" || msg.auth === "none" ? msg.auth : "bearer";
+    const key = typeof msg.key === "string" ? msg.key.trim() : "";
+    if (auth !== "none" && !AI_KEY_RE.test(key)) return reply(false, "bad_format");
+    const model = typeof msg.model === "string" && AI_MODEL_RE.test(msg.model.trim()) ? msg.model.trim() : DEFAULT_MODEL;
+    const url = checkAiUrl(typeof msg.baseUrl === "string" && msg.baseUrl.trim() ? msg.baseUrl : OPENAI_BASE_URL);
+    if (!url.ok) return reply(false, url.reason);
+    const cfg: LlmConfig = { baseUrl: url.url.href.replace(/\/+$/, ""), apiKey: auth === "none" ? "" : key, auth, model, temperature: 0.9, timeoutMs: 15000 };
+    const check = await verifyEndpoint(cfg, this.playerFetch);
     if (check !== "ok") return reply(false, check);
-    if (!this.conns.has(conn)) return; // left while the key was checked
+    if (!this.conns.has(conn)) return; // left while the endpoint was checked
     this.keyOwner = conn.playerId;
-    this.engine.setBrain(this.makeBrain({ baseUrl: OPENAI_BASE_URL, apiKey: key, model, temperature: 0.9, timeoutMs: 15000 }));
+    this.engine.setBrain(this.makeBrain(cfg, this.playerFetch));
     reply(true);
   }
 
@@ -114,7 +125,7 @@ export class Room {
       return;
     }
     if (msg.t === "aiKey") {
-      this.setRoomKey(conn, msg.key, msg.model).catch(() => {});
+      this.setRoomKey(conn, msg).catch(() => {});
       return;
     }
     if (msg.t === "hello") {

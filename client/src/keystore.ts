@@ -1,15 +1,17 @@
+import { AI_KEY_RE, providerById, type AiAuth } from "@bros/shared";
+
 /**
- * The player's own OpenAI key, kept on this device only.
+ * The player's own AI endpoint and key, kept on this device only.
  * IndexedDB on purpose: Toki copies localStorage into the player's Toki account to sync saves,
  * and a key must not end up there.
  */
 export interface AiSettings {
+  provider: string;
+  baseUrl: string;
+  auth: AiAuth;
   key: string;
   model: string;
 }
-
-export const DEFAULT_MODEL = "gpt-4o-mini";
-export const KEY_RE = /^sk-[A-Za-z0-9_-]{20,200}$/;
 
 const DB = "bros-secrets";
 const STORE = "kv";
@@ -36,8 +38,12 @@ async function run<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRe
 
 export async function loadAiSettings(): Promise<AiSettings | null> {
   try {
-    const v = (await run("readonly", (s) => s.get(ID))) as AiSettings | undefined;
-    return v && typeof v.key === "string" && KEY_RE.test(v.key) ? { key: v.key, model: v.model || DEFAULT_MODEL } : null;
+    const v = (await run("readonly", (s) => s.get(ID))) as Partial<AiSettings> | undefined;
+    if (!v || typeof v.key !== "string") return null;
+    const p = providerById(v.provider ?? "openai");
+    const auth: AiAuth = v.auth === "api-key" || v.auth === "none" ? v.auth : "bearer";
+    if (auth !== "none" && !AI_KEY_RE.test(v.key)) return null;
+    return { provider: p.id, baseUrl: v.baseUrl || p.baseUrl, auth, key: v.key, model: v.model || p.model };
   } catch {
     return memory;
   }
@@ -58,4 +64,4 @@ export async function clearAiSettings(): Promise<void> {
 }
 
 /** sk-proj-…abcd: enough to recognise the key, never the whole key. */
-export const maskKey = (key: string) => `${key.slice(0, 8)}…${key.slice(-4)}`;
+export const maskKey = (key: string) => (key ? `${key.slice(0, Math.min(6, key.length - 4))}…${key.slice(-4)}` : "ohne Key");

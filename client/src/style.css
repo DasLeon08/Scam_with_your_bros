@@ -21,7 +21,7 @@ body {
 #stage { position: absolute; left: 50%; top: 50%; width: 1280px; height: 720px; transform-origin: 50% 50%; }
 .screen { position: absolute; inset: 0; }
 h1, h2, h3, .display { font-family: "Lilita", sans-serif; font-weight: 400; letter-spacing: .5px; }
-button, input { font: inherit; color: inherit; }
+button, input, select { font: inherit; color: inherit; }
 .panel { background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: var(--shadow); }
 .btn {
   font-family: "Lilita", sans-serif; font-size: 22px; letter-spacing: .5px; border: 3px solid var(--ink); border-radius: 12px;
@@ -235,6 +235,12 @@ button.chip.on { background: var(--mustard); }
 .toast.bad { background: var(--red); }
 @keyframes pop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .modal { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 520px; padding: 24px; display: flex; flex-direction: column; gap: 14px; text-align: center; z-index: 25; }
+
+.ai-modal { width: 640px; text-align: left; gap: 10px; padding: 20px 24px; }
+.ai-grid { display: grid; grid-template-columns: 110px 1fr; gap: 8px 12px; align-items: center; }
+.ai-grid label { font-size: 13px; font-weight: 900; color: var(--muted); }
+.ai-grid .input { font-size: 15px; padding: 7px 10px; width: 100%; }
+select.input { appearance: auto; }
 
 /* ---------- review ---------- */
 .boss { position: absolute; inset: 24px 40px; display: grid; grid-template-columns: 430px 1fr; gap: 28px; }

@@ -111,4 +111,27 @@ describe("Node game server", () => {
     await until(() => lastState(b)?.state.ai === false);
     b.ws.close();
   });
+
+  it("any OpenAI-compatible endpoint: own base URL, api-key header, blocked internal addresses", async () => {
+    const { code } = await (await fetch(`http://${base}/api/rooms`, { method: "POST" })).json();
+    const a = await connect(code);
+    a.ws.send(JSON.stringify({ t: "hello", name: "Host", color: "", hair: "" }));
+    await until(() => a.msgs.some((m) => m.t === "welcome"));
+    const events = () => a.msgs.flatMap((m) => (m.t === "event" && m.event.kind === "aiKey" ? [m.event] : []));
+    const send = (x: object) => a.ws.send(JSON.stringify({ t: "aiKey", ...x }));
+
+    send({ key: GOOD, baseUrl: "https://127.0.0.1:4000/v1" });
+    await until(() => events().length === 1);
+    expect(events()[0].reason).toBe("blocked_url");
+    send({ key: GOOD, baseUrl: "http://my-proxy.example.com/v1" });
+    await until(() => events().length === 2);
+    expect(events()[1].reason).toBe("bad_url");
+
+    llmCalls.length = 0;
+    send({ key: GOOD, baseUrl: "https://my-proxy.example.com/openai/v1/", model: "firma/gpt-4o-mini", auth: "bearer" });
+    await until(() => events().length === 3);
+    expect(events()[2]).toEqual({ kind: "aiKey", ok: true });
+    expect(llmCalls.at(-1)!.url).toBe("https://my-proxy.example.com/openai/v1/chat/completions");
+    a.ws.close();
+  });
 });

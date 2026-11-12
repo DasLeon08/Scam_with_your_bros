@@ -15,7 +15,8 @@ import {
   type RoomState,
 } from "@bros/shared";
 import * as art from "./art";
-import { DEFAULT_MODEL, KEY_RE, clearAiSettings, loadAiSettings, maskKey, saveAiSettings, type AiSettings } from "./keystore";
+import { AI_KEY_RE, AI_MODEL_RE, AI_PROVIDERS, providerById, type AiAuth } from "@bros/shared";
+import { clearAiSettings, loadAiSettings, maskKey, saveAiSettings, type AiSettings } from "./keystore";
 import { Connection, createRoom, inToki, linkCode, onTokiHost, onTokiName, tellToki, tokiScore, wakeServer, type Profile } from "./net";
 
 /* ================================================================== */
@@ -164,7 +165,7 @@ function maybeSendKey() {
   if (keySentFor === term) return;
   keySentFor = term;
   aiChecking = true;
-  send({ t: "aiKey", key: aiSettings.key, model: aiSettings.model });
+  send({ t: "aiKey", key: aiSettings.key, model: aiSettings.model, baseUrl: aiSettings.baseUrl, auth: aiSettings.auth });
 }
 
 function leave(error = "") {
@@ -215,15 +216,19 @@ function onEvent(e: GameEvent) {
     case "aiKey": {
       aiChecking = false;
       const msg = e.ok
-        ? "🤖 KI-Anrufer sind an: Dein eigener Key wird für diesen Raum benutzt."
+        ? "🤖 KI-Anrufer sind an: Dein eigener Endpunkt wird für diesen Raum benutzt."
         : {
-            bad_key: "OpenAI hat den Key abgelehnt. Die Skript-Anrufer übernehmen.",
-            unreachable: "OpenAI ist gerade nicht erreichbar. Die Skript-Anrufer übernehmen.",
-            bad_format: "Das sieht nicht wie ein OpenAI-Key aus (sk-…).",
+            bad_key: "Der Anbieter hat den Key abgelehnt. Die Skript-Anrufer übernehmen.",
+            bad_model: "Der Anbieter kennt dieses Modell nicht. Prüf den Modellnamen.",
+            bad_url: "Unter dieser Adresse antwortet kein OpenAI-kompatibler Endpunkt (https://…/v1).",
+            blocked_url: "Interne Adressen (localhost, private IPs) sind nicht erlaubt. Der Endpunkt muss öffentlich per https erreichbar sein.",
+            unreachable: "Der Endpunkt ist gerade nicht erreichbar. Die Skript-Anrufer übernehmen.",
+            bad_format: "Das sieht nicht wie ein gültiger Key aus.",
             not_host: "Nur der Host kann die KI-Anrufer einschalten.",
           }[e.reason ?? "unreachable"];
       toast(msg, e.ok ? "good" : "bad");
       setAiStatus(msg, !e.ok);
+      if (e.ok) setTimeout(() => $(".ai-modal") && ($("#overlay")!.innerHTML = ""), 1200);
       break;
     }
   }
@@ -298,7 +303,7 @@ function mountTitle(): Mounted {
       $("#hairs")!.innerHTML = HAIRS.map((h) => `<button type="button" data-act="hair" data-v="${h}" class="${h === profile.hair ? "sel" : ""}" aria-label="Frisur ${h}">${art.bro(profile.color, h, 40)}</button>`).join("");
       renderTitleError(titleError);
       const label = $("#ai-label");
-      if (label) label.textContent = aiSettings ? "eigener OpenAI-Key" : "Skript (gratis)";
+      if (label) label.textContent = aiSettings ? `eigener Key (${providerById(aiSettings.provider).name.split(" (")[0]})` : "Skript (gratis)";
     },
   };
 }
@@ -740,50 +745,79 @@ function showAiSettings() {
   const box = $("#overlay");
   if (!box) return;
   const inRoom = !!S;
+  const cur = aiSettings ?? { provider: "openai", baseUrl: AI_PROVIDERS[0].baseUrl, auth: "bearer" as AiAuth, key: "", model: AI_PROVIDERS[0].model };
   box.innerHTML = `<div class="overlay"><div class="dim" data-act="aiclose"></div>
-    <form class="panel modal" data-form="ai" autocomplete="off" style="text-align:left">
-      <h2 style="font-size:28px">🤖 KI-Anrufer</h2>
-      <p style="font-size:14px">Optional. <b>Ohne Key</b> antworten Skript-Anrufer, gratis und immer verfügbar.
-        <b>Mit deinem eigenen OpenAI-Key</b> antworten die Anrufer mit KI. Die Kosten gehen auf dein OpenAI-Konto
-        (mit ${DEFAULT_MODEL} meist nur Rappen pro Spieltag).</p>
-      <p class="hint" style="font-size:12px">🔒 Der Key bleibt auf diesem Gerät. Er geht nur an den Spielserver und nur für deinen Raum,
-        wenn du Host bist. Er geht nie an Mitspieler und wird nicht in dein Toki-Konto synchronisiert.</p>
-      ${aiSettings
-        ? `<div class="chip" style="align-self:flex-start">Gespeichert: ${esc(maskKey(aiSettings.key))} · ${esc(aiSettings.model)}</div>`
-        : ""}
-      <label class="hint" for="ai-key" style="font-weight:900">OpenAI-API-Key</label>
-      <input id="ai-key" class="input" type="password" placeholder="${aiSettings ? "neuen Key eintragen, um zu ersetzen" : "sk-…"}" spellcheck="false" style="font-size:16px">
-      <label class="hint" for="ai-model" style="font-weight:900">Modell</label>
-      <input id="ai-model" class="input" value="${esc(aiSettings?.model ?? DEFAULT_MODEL)}" spellcheck="false" style="font-size:16px">
-      <div class="err" id="ai-status" role="status">${aiChecking ? "Key wird geprüft…" : inRoom && !isHost() ? "Dein Key wird benutzt, sobald du Host eines Raums bist." : ""}</div>
+    <form class="panel modal ai-modal" data-form="ai" autocomplete="off">
+      <h2 style="font-size:26px">🤖 KI-Anrufer</h2>
+      <p style="font-size:13px">Optional. <b>Ohne Key</b> antworten Skript-Anrufer, gratis. <b>Mit eigenem Key</b> antworten die Anrufer mit KI,
+        über jeden OpenAI-kompatiblen Anbieter oder deinen eigenen Endpunkt. Die Kosten gehen auf dein Konto beim Anbieter.</p>
+      ${aiSettings ? `<div class="chip" style="align-self:flex-start">Gespeichert: ${esc(providerById(aiSettings.provider).name.split(" (")[0])} · ${esc(maskKey(aiSettings.key))} · ${esc(aiSettings.model)}</div>` : ""}
+      <div class="ai-grid">
+        <label for="ai-provider">Anbieter</label>
+        <select id="ai-provider" class="input">${AI_PROVIDERS.map((p) => `<option value="${p.id}" ${p.id === cur.provider ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select>
+        <label for="ai-url">Endpunkt</label>
+        <input id="ai-url" class="input mono" value="${esc(cur.baseUrl)}" spellcheck="false" placeholder="https://…/v1">
+        <label for="ai-auth">Anmeldung</label>
+        <select id="ai-auth" class="input">
+          <option value="bearer" ${cur.auth === "bearer" ? "selected" : ""}>Authorization: Bearer &lt;Key&gt; (Standard)</option>
+          <option value="api-key" ${cur.auth === "api-key" ? "selected" : ""}>api-key: &lt;Key&gt; (Azure)</option>
+          <option value="none" ${cur.auth === "none" ? "selected" : ""}>Ohne Key</option>
+        </select>
+        <label for="ai-key">API-Key</label>
+        <input id="ai-key" class="input" type="password" spellcheck="false" placeholder="${aiSettings ? "leer lassen = gespeicherten Key behalten" : esc(providerById(cur.provider).keyHint)}">
+        <label for="ai-model">Modell</label>
+        <input id="ai-model" class="input mono" value="${esc(cur.model)}" spellcheck="false">
+      </div>
+      <p class="hint" style="font-size:12px">Der Endpunkt ist die Adresse vor <span class="mono">/chat/completions</span>.
+        🔒 Der Key bleibt auf diesem Gerät. Er geht nur an den Spielserver und nur für deinen Raum, wenn du Host bist.
+        Er geht nie an Mitspieler und wird nicht in dein Toki-Konto synchronisiert.</p>
+      <div class="err" id="ai-status" role="status">${aiChecking ? "Endpunkt wird geprüft…" : inRoom && !isHost() ? "Deine Einstellung wird benutzt, sobald du Host eines Raums bist." : ""}</div>
       <div class="row" style="justify-content:flex-end; flex-wrap:wrap">
-        ${aiSettings ? `<button type="button" class="btn ghost sm" data-act="aiclear">Key entfernen</button>` : ""}
+        ${aiSettings ? `<button type="button" class="btn ghost sm" data-act="aiclear">Entfernen</button>` : ""}
         <button type="button" class="btn ghost sm" data-act="aiclose">Schliessen</button>
         <button class="btn pink sm">Speichern</button>
       </div>
     </form></div>`;
-  setTimeout(() => $<HTMLInputElement>("#ai-key")?.focus(), 0);
+  // picking a provider fills in its address, model and login type
+  $<HTMLSelectElement>("#ai-provider")!.addEventListener("change", (e) => {
+    const p = providerById((e.target as HTMLSelectElement).value);
+    $<HTMLInputElement>("#ai-url")!.value = p.baseUrl;
+    $<HTMLInputElement>("#ai-model")!.value = p.model;
+    $<HTMLSelectElement>("#ai-auth")!.value = p.auth;
+    $<HTMLInputElement>("#ai-key")!.placeholder = p.keyHint;
+    if (p.editUrl) setTimeout(() => $<HTMLInputElement>("#ai-url")?.focus(), 0);
+  });
+  setTimeout(() => $<HTMLSelectElement>("#ai-provider")?.focus(), 0);
 }
 
 async function saveAiFromForm() {
-  const key = $<HTMLInputElement>("#ai-key")!.value.trim();
-  const model = $<HTMLInputElement>("#ai-model")!.value.trim() || DEFAULT_MODEL;
-  if (!key && aiSettings) {
-    aiSettings = { ...aiSettings, model };
-  } else if (!KEY_RE.test(key)) {
-    setAiStatus("Das sieht nicht wie ein OpenAI-Key aus. Er beginnt mit sk-.", true);
+  const provider = $<HTMLSelectElement>("#ai-provider")!.value;
+  const baseUrl = $<HTMLInputElement>("#ai-url")!.value.trim().replace(/\/+$/, "");
+  const auth = $<HTMLSelectElement>("#ai-auth")!.value as AiAuth;
+  const typed = $<HTMLInputElement>("#ai-key")!.value.trim();
+  const model = $<HTMLInputElement>("#ai-model")!.value.trim();
+  const key = auth === "none" ? "" : typed || aiSettings?.key || "";
+  if (!/^https:\/\/[^/\s]+\.[^/\s]+/.test(baseUrl) || baseUrl.includes("DEIN-")) {
+    setAiStatus("Der Endpunkt muss eine öffentliche https-Adresse sein, z. B. https://api.openai.com/v1.", true);
     return;
-  } else {
-    aiSettings = { key, model };
   }
+  if (auth !== "none" && !AI_KEY_RE.test(key)) {
+    setAiStatus("Bitte einen gültigen API-Key eintragen (ohne Leerzeichen).", true);
+    return;
+  }
+  if (!AI_MODEL_RE.test(model)) {
+    setAiStatus("Bitte einen Modellnamen eintragen, z. B. gpt-4o-mini.", true);
+    return;
+  }
+  aiSettings = { provider, baseUrl, auth, key, model };
   await saveAiSettings(aiSettings);
   $<HTMLInputElement>("#ai-key")!.value = "";
   keySentFor = "";
   if (S && isHost()) {
-    setAiStatus("Gespeichert. Key wird bei OpenAI geprüft…");
+    setAiStatus("Gespeichert. Endpunkt wird geprüft…");
     maybeSendKey();
   } else {
-    setAiStatus("Gespeichert. Er wird benutzt, sobald du einen Raum hostest.");
+    setAiStatus("Gespeichert. Wird benutzt, sobald du einen Raum hostest.");
     setTimeout(() => ($("#overlay")!.innerHTML = ""), 1200);
   }
   screen?.update();

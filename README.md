@@ -26,18 +26,35 @@ keine echten Firmen, keine echten Methoden, kein Echtgeld.
 **Anrufer:** Gustav Grummelbart (Leuchtturmwärter), Kiki Sternschnuppe (Influencerin), Prof. Dr. Balduin Knopf
 (Knopfforscher), Wilma Wirbelwind (Rennschnecken-Trainerin) und Herr Blümchen (Scambaiter).
 
-## KI-Anrufer: Skript oder eigener OpenAI-Key
+## KI-Anrufer: Skript oder eigener KI-Endpunkt
 
 Die Anrufer antworten **per Skript** (Standard, gratis, ohne Einrichtung) **oder per KI**.
 
-**Eigener Key im Spiel (empfohlen):** Auf dem Titelscreen oder in der Lobby auf **«🤖 KI-Anrufer»** klicken
-und einmal den eigenen OpenAI-Key eintragen. Das Modell ist standardmässig `gpt-4o-mini`.
+**Eigener Endpunkt im Spiel (empfohlen):** Auf dem Titelscreen oder in der Lobby auf **«🤖 KI-Anrufer»** klicken.
+Dort wählt man einen Anbieter oder trägt einen **eigenen Endpunkt** ein. Jede OpenAI-kompatible
+`/chat/completions`-Schnittstelle funktioniert.
+
+| Voreinstellung | Endpunkt (änderbar) | Anmeldung |
+| --- | --- | --- |
+| OpenAI | `https://api.openai.com/v1` | Bearer |
+| OpenRouter (viele Modelle, auch Claude) | `https://openrouter.ai/api/v1` | Bearer |
+| Groq, Mistral, DeepSeek, Google Gemini, xAI, Together, Fireworks, Perplexity | jeweils deren OpenAI-kompatible Adresse | Bearer |
+| Azure OpenAI | `https://<resource>.openai.azure.com/openai/v1` | `api-key`-Header |
+| **Eigener Endpunkt** (LiteLLM, eigener OpenAI-Proxy, …) | beliebige öffentliche `https://…/v1`-Adresse | Bearer, `api-key` oder ohne Key |
+
+Die Modellnamen in den Voreinstellungen sind nur Vorschläge, jedes Modell des Endpunkts lässt sich eintragen.
+
 - Der Key bleibt **auf dem Gerät des Spielers**, in IndexedDB. Absichtlich nicht in `localStorage`,
   weil Toki das in die Toki-Konten synchronisiert.
-- Wer Host ist, schickt ihn einmal an den Spielserver. Der prüft ihn bei OpenAI und nutzt ihn **nur für diesen Raum,
-  nur im Arbeitsspeicher**. Der Key wird nicht gespeichert und nicht geloggt und nie an Mitspieler oder zurück an Browser geschickt.
+- Wer Host ist, schickt die Einstellung einmal an den Spielserver. Der prüft sie mit einer winzigen Test-Anfrage
+  und nutzt sie **nur für diesen Raum, nur im Arbeitsspeicher**. Der Key wird nicht gespeichert und nicht geloggt
+  und nie an Mitspieler oder zurück an Browser geschickt.
+- **Schutz für den Server:** Er spricht nur `https`-Adressen an, die öffentlich sind. `localhost`, private Netze
+  (10.x, 192.168.x, 172.16–31.x …), Link-local- und Cloud-Metadaten-Adressen (169.254.x) sowie interne Namen werden
+  abgelehnt. Die IP wird erst beim Verbinden geprüft, damit kein DNS-Rebinding möglich ist. Weiterleitungen folgt
+  der Server nicht, und Antworten sind auf 2 MB begrenzt (`server/src/netguard.ts`).
 - Verlässt der Key-Besitzer den Raum, schaltet der Raum sofort auf die Skript-Anrufer zurück.
-- Die Kosten gehen auf das OpenAI-Konto des Hosts.
+- Die Kosten gehen auf das Konto des Hosts beim Anbieter.
 
 **Optional ein Key für alle auf dem Server** (gilt, wenn der Host keinen eigenen hat):
 
@@ -45,7 +62,7 @@ und einmal den eigenen OpenAI-Key eintragen. Das Modell ist standardmässig `gpt
 | --- | --- |
 | nichts | Skript-Anrufer (bzw. der eigene Key des Hosts) |
 | `OPENAI_API_KEY=sk-…` | OpenAI, Modell `gpt-4o-mini` (mit `LLM_MODEL` änderbar) |
-| `LLM_BASE_URL=…` (+ `LLM_API_KEY`, `LLM_MODEL`) | eigener OpenAI-kompatibler Endpunkt, z. B. LiteLLM oder Ollama |
+| `LLM_BASE_URL=…` (+ `LLM_API_KEY`, `LLM_MODEL`, optional `LLM_AUTH=api-key` oder `none`) | eigener OpenAI-kompatibler Endpunkt, z. B. LiteLLM oder Ollama (vom Betreiber gesetzt, darf auch intern sein) |
 
 - Fällt die KI aus oder ist das Limit erreicht, übernehmen automatisch die Skript-Anrufer. Das Spiel läuft also immer weiter.
 - **Rate-Limit pro Raum:** `RATE_LIMIT_PER_MINUTE` (Standard 20) und `RATE_LIMIT_PER_ROOM` (Standard 400 KI-Antworten insgesamt).

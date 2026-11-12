@@ -4,35 +4,53 @@ import { CLIENT, SERVER } from "../../playwright.config";
 const url = `${CLIENT}/?server=${encodeURIComponent(SERVER)}`;
 const FAKE = "sk-test-not-a-real-key-1234567890";
 
-test("own OpenAI key: saved on this device only, checked when hosting, script as fallback", async ({ page }) => {
+test("own AI endpoint: providers, custom URL, kept on this device only, internal addresses refused", async ({ page }) => {
   await page.goto(url);
   await expect(page.locator("#ai-label")).toHaveText("Skript (gratis)");
 
   // the setting is optional and explains where the key goes
   await page.click("[data-act=aisettings]");
   await expect(page.locator(".modal")).toContainText("nicht in dein Toki-Konto");
-  await page.fill("#ai-key", "kein-key");
-  await page.click(".modal button.pink");
-  await expect(page.locator("#ai-status")).toContainText("beginnt mit sk-");
+
+  // picking a provider fills in its endpoint and model
+  await page.selectOption("#ai-provider", "groq");
+  await expect(page.locator("#ai-url")).toHaveValue("https://api.groq.com/openai/v1");
+  await page.selectOption("#ai-provider", "azure");
+  await expect(page.locator("#ai-auth")).toHaveValue("api-key");
+
+  // a custom endpoint: must be https; then saved
+  await page.selectOption("#ai-provider", "custom");
+  await page.fill("#ai-url", "http://mein-proxy.example.com/v1");
   await page.fill("#ai-key", FAKE);
   await page.click(".modal button.pink");
+  await expect(page.locator("#ai-status")).toContainText("https");
+  await page.fill("#ai-url", "https://127.0.0.1:4000/v1"); // looks fine here, the server refuses it
+  await page.fill("#ai-model", "firma/gpt-4o-mini");
+  await page.click(".modal button.pink");
   await expect(page.locator("#ai-status")).toContainText("Gespeichert");
-  await expect(page.locator("#ai-label")).toHaveText("eigener OpenAI-Key");
+  await expect(page.locator("#ai-label")).toContainText("Eigener Endpunkt");
 
   // kept after a reload, but never in localStorage (Toki syncs that into accounts)
   await page.reload();
-  await expect(page.locator("#ai-label")).toHaveText("eigener OpenAI-Key");
-  const ls = await page.evaluate(() => JSON.stringify({ ...localStorage }));
-  expect(ls).not.toContain(FAKE);
+  await expect(page.locator("#ai-label")).toContainText("Eigener Endpunkt");
+  expect(await page.evaluate(() => JSON.stringify({ ...localStorage }))).not.toContain(FAKE);
 
-  // hosting sends it to the server once; a fake key is refused and the scripted callers stay
+  // hosting sends it to the server, which refuses internal addresses; scripted callers stay
   await page.click("[data-act=create]");
   await expect(page.locator("#code-big")).toBeVisible();
-  await expect(page.locator("#toasts")).toContainText(/OpenAI (hat den Key abgelehnt|ist gerade nicht erreichbar)/);
+  await expect(page.locator("#toasts")).toContainText("Interne Adressen");
   await expect(page.locator("#aimode")).toContainText("Skript-Anrufer");
 
-  // removing it
+  // OpenAI with a fake key: refused by OpenAI (or not reachable from here), scripted callers stay
   await page.click("#aimode");
+  await page.selectOption("#ai-provider", "openai");
+  await page.fill("#ai-key", FAKE);
+  await page.click(".modal button.pink");
+  await expect(page.locator("#toasts")).toContainText(/abgelehnt|nicht erreichbar/);
+  await expect(page.locator("#aimode")).toContainText("Skript-Anrufer");
+
+  // removing it (the dialog is still open with the message)
+  await expect(page.locator(".ai-modal")).toBeVisible();
   await page.click("[data-act=aiclear]");
   await expect(page.locator("#toasts")).toContainText("Key entfernt");
 });
