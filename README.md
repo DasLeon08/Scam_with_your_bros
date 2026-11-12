@@ -44,7 +44,7 @@ Dort wählt man einen Anbieter oder trägt einen **eigenen Endpunkt** ein. Jede 
 | Voreinstellung | Endpunkt (änderbar) | Anmeldung |
 | --- | --- | --- |
 | OpenAI | `https://api.openai.com/v1` | Bearer |
-| ASK (TF Bern) | `https://ask.ict-tfbern.ch/api` | Bearer |
+| ASK (TF Bern) | `https://ask.ict-tfbern.ch/api/v1` | Bearer |
 | OpenRouter (viele Modelle, auch Claude) | `https://openrouter.ai/api/v1` | Bearer |
 | Groq, Mistral, DeepSeek, Google Gemini, xAI, Together, Fireworks, Perplexity | jeweils deren OpenAI-kompatible Adresse | Bearer |
 | Azure OpenAI | `https://<resource>.openai.azure.com/openai/v1` | `api-key`-Header |
