@@ -44,6 +44,7 @@ Dort wählt man einen Anbieter oder trägt einen **eigenen Endpunkt** ein. Jede 
 | Voreinstellung | Endpunkt (änderbar) | Anmeldung |
 | --- | --- | --- |
 | OpenAI | `https://api.openai.com/v1` | Bearer |
+| ASK (TF Bern) | `https://ask.ict-tfbern.ch/api` | Bearer |
 | OpenRouter (viele Modelle, auch Claude) | `https://openrouter.ai/api/v1` | Bearer |
 | Groq, Mistral, DeepSeek, Google Gemini, xAI, Together, Fireworks, Perplexity | jeweils deren OpenAI-kompatible Adresse | Bearer |
 | Azure OpenAI | `https://<resource>.openai.azure.com/openai/v1` | `api-key`-Header |
@@ -53,6 +54,9 @@ Die Modellnamen in den Voreinstellungen sind nur Vorschläge, jedes Modell des E
 
 - Der Key bleibt **auf dem Gerät des Spielers**, in IndexedDB. Absichtlich nicht in `localStorage`,
   weil Toki das in die Toki-Konten synchronisiert.
+- **Adresse und Modell finden:** Antwortet unter der eingetragenen Adresse nichts, probiert der Server sie mit `/v1`
+  am Ende noch einmal und übernimmt die Adresse, die antwortet. Der Test holt ausserdem die Modell-Liste des
+  Endpunkts (`/models`), die Modelle erscheinen zum Anklicken.
 - **«🔌 Verbindung testen»** prüft die Einstellung sofort, auch ohne Raum: Der Server schickt eine winzige
   Test-Anfrage und meldet Erfolg und Antwortzeit oder genau, was nicht stimmt (Key, Modell, Adresse, nicht erreichbar).
   Pro IP sind 6 Tests pro Minute möglich.

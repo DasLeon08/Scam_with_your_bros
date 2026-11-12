@@ -779,6 +779,7 @@ function showAiSettings() {
       <p class="hint" style="font-size:12px">Der Endpunkt ist die Adresse vor <span class="mono">/chat/completions</span>.
         🔒 Der Key bleibt auf diesem Gerät. Er geht nur an den Spielserver und nur für deinen Raum, wenn du Host bist.
         Er geht nie an Mitspieler und wird nicht in dein Toki-Konto synchronisiert.</p>
+      <div class="ai-models" id="ai-models"></div>
       <div class="err" id="ai-status" role="status">${aiChecking ? "Endpunkt wird geprüft…" : inRoom && !isHost() ? "Deine Einstellung wird benutzt, sobald du Host eines Raums bist." : ""}</div>
       <div class="row" style="justify-content:flex-end; flex-wrap:wrap">
         ${aiSettings ? `<button type="button" class="btn ghost sm" data-act="aiclear">Entfernen</button>` : ""}
@@ -830,8 +831,28 @@ async function testAiFromForm() {
   setAiStatus("🔌 Teste die Verbindung…");
   const r = await testAiEndpoint({ baseUrl: v.baseUrl, auth: v.auth, key: v.key, model: v.model });
   if (btn) btn.disabled = false;
-  if (r.ok) setAiStatus(`✅ Verbindung klappt! Modell «${r.model ?? v.model}» hat in ${((r.ms ?? 0) / 1000).toFixed(1)} s geantwortet.`);
-  else setAiStatus(`❌ ${aiProblem(r.reason)}`, true);
+  // the server may have found the endpoint one level deeper (…/v1): take that address
+  let fixed = "";
+  if (r.baseUrl && r.baseUrl !== v.baseUrl) {
+    $<HTMLInputElement>("#ai-url")!.value = r.baseUrl;
+    fixed = ` Die Adresse wurde auf ${r.baseUrl} ergänzt.`;
+  }
+  showModelChoices(r.models ?? [], v.model);
+  if (r.ok) setAiStatus(`✅ Verbindung klappt! Modell «${r.model ?? v.model}» hat in ${((r.ms ?? 0) / 1000).toFixed(1)} s geantwortet.${fixed} Jetzt «Speichern».`);
+  else if (r.reason === "bad_model" && r.models?.length) setAiStatus(`❌ Das Modell «${v.model}» gibt es dort nicht. Wähl oben eins aus und teste nochmal.${fixed}`, true);
+  else setAiStatus(`❌ ${aiProblem(r.reason)}${fixed}`, true);
+}
+
+/** Models the endpoint offers, as buttons that fill in the model field. */
+function showModelChoices(models: string[], current: string) {
+  const box = $("#ai-models");
+  if (!box) return;
+  box.innerHTML = models.length
+    ? `<span class="hint" style="font-size:12px">Verfügbare Modelle:</span> ${models
+        .slice(0, 24)
+        .map((m) => `<button type="button" class="chip ${m === current ? "on" : ""}" data-act="aimodel" data-v="${esc(m)}">${esc(m)}</button>`)
+        .join("")}${models.length > 24 ? `<span class="hint" style="font-size:12px">… und ${models.length - 24} weitere</span>` : ""}`
+    : "";
 }
 
 async function saveAiFromForm() {
@@ -1006,6 +1027,13 @@ stage.addEventListener("click", async (e) => {
     case "aitest":
       void testAiFromForm();
       break;
+    case "aimodel": {
+      const field = $<HTMLInputElement>("#ai-model");
+      if (field) field.value = v;
+      stage.querySelectorAll("#ai-models .chip").forEach((c) => c.classList.toggle("on", (c as HTMLElement).dataset.v === v));
+      setAiStatus(`Modell «${v}» gewählt. Teste nochmal oder speichere.`);
+      break;
+    }
     case "tutorial":
       showTutorial(0);
       break;

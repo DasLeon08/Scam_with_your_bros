@@ -22,6 +22,10 @@ export interface AiTestResult {
   reason?: string;
   ms?: number;
   model?: string;
+  /** The address that answered (maybe with /v1 added). */
+  baseUrl?: string;
+  /** Models the endpoint offers, if it lists them. */
+  models?: string[];
 }
 
 /** "Verbindung testen": the server sends one tiny request to the endpoint and reports back. */

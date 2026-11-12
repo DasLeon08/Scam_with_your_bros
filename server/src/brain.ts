@@ -102,6 +102,49 @@ export async function verifyEndpoint(cfg: LlmConfig, fetchFn: typeof fetch = fet
   }
 }
 
+/** The model names an endpoint offers (GET /models; OpenAI, Open WebUI, LiteLLM, OpenRouter …). */
+export async function listModels(cfg: LlmConfig, fetchFn: typeof fetch = fetch): Promise<string[]> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const res = await fetchFn(`${cfg.baseUrl}/models`, { headers: authHeaders(cfg), signal: ctrl.signal });
+    if (!res.ok) return [];
+    const data = (await res.json().catch(() => null)) as { data?: { id?: unknown }[]; models?: { id?: unknown; name?: unknown }[] } | null;
+    const list = (data?.data ?? data?.models ?? []).map((m) => (m as { id?: unknown }).id ?? (m as { name?: unknown }).name);
+    return [...new Set(list.filter((x): x is string => typeof x === "string" && x.length > 0 && x.length <= 128))].slice(0, 60);
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export interface EndpointProbe {
+  check: EndpointCheck;
+  /** The address that answered (the one typed in, or with /v1 added). */
+  baseUrl: string;
+  models: string[];
+}
+
+/**
+ * Like verifyEndpoint, but forgiving about the address: if nothing answers there, it tries once
+ * more with /v1 at the end. When the model is unknown (or it works), it also fetches the model list.
+ */
+export async function probeEndpoint(cfg: LlmConfig, fetchFn: typeof fetch = fetch): Promise<EndpointProbe> {
+  const tries = [cfg.baseUrl];
+  if (!/\/v\d+$/.test(cfg.baseUrl)) tries.push(`${cfg.baseUrl}/v1`);
+  let result: EndpointProbe = { check: "bad_url", baseUrl: cfg.baseUrl, models: [] };
+  for (const baseUrl of tries) {
+    const check = await verifyEndpoint({ ...cfg, baseUrl }, fetchFn);
+    result = { check, baseUrl, models: [] };
+    if (check !== "bad_url") break;
+  }
+  if (result.check === "ok" || result.check === "bad_model") {
+    result.models = await listModels({ ...cfg, baseUrl: result.baseUrl }, fetchFn);
+  }
+  return result;
+}
+
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 const pick = <T>(arr: T[], r: () => number) => arr[Math.floor(r() * arr.length) % arr.length];
 const count = (text: string, words: string[]) => words.filter((w) => text.includes(w)).length;

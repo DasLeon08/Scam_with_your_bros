@@ -1,6 +1,6 @@
 import { CLOSE, randomCode, type ClientMsg, type ServerMsg } from "@bros/shared";
 import type { AiKeyProblem } from "@bros/shared";
-import { HybridBrain, LlmBrain, RoomLimiter, ScriptedBrain, llmConfigFromEnv, verifyEndpoint, type LlmConfig } from "./brain";
+import { HybridBrain, LlmBrain, RoomLimiter, ScriptedBrain, llmConfigFromEnv, probeEndpoint, type LlmConfig } from "./brain";
 import { endpointFromInput } from "./endpoint";
 import { safeFetch } from "./netguard";
 import type { ServerConfig } from "./config";
@@ -81,8 +81,9 @@ export class Room {
     const input = endpointFromInput(msg);
     if (!input.ok) return reply(false, input.reason);
     const cfg = input.cfg;
-    const check = await verifyEndpoint(cfg, this.playerFetch);
-    if (check !== "ok") return reply(false, check);
+    const probe = await probeEndpoint(cfg, this.playerFetch);
+    if (probe.check !== "ok") return reply(false, probe.check);
+    cfg.baseUrl = probe.baseUrl; // e.g. with /v1 added
     if (!this.conns.has(conn)) return; // left while the endpoint was checked
     this.keyOwner = conn.playerId;
     this.engine.setBrain(this.makeBrain(cfg, this.playerFetch));

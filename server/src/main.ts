@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { CLOSE, normalizeCode } from "@bros/shared";
 import { WebSocketServer, type WebSocket } from "ws";
-import { llmConfigFromEnv, verifyEndpoint } from "./brain";
+import { llmConfigFromEnv, probeEndpoint } from "./brain";
 import { endpointFromInput } from "./endpoint";
 import { safeFetch } from "./netguard";
 import { configFromEnv, originAllowed, type ServerConfig } from "./config";
@@ -80,8 +80,9 @@ export function startServer(cfg: ServerConfig = configFromEnv()) {
         const input = endpointFromInput(body);
         if (!input.ok) return reply(res, 200, { ok: false, reason: input.reason }, cors);
         const started = Date.now();
-        const check = await verifyEndpoint(input.cfg, cfg.fetchFn ?? safeFetch);
-        reply(res, 200, { ok: check === "ok", reason: check === "ok" ? undefined : check, ms: Date.now() - started, model: input.cfg.model }, cors);
+        const probe = await probeEndpoint(input.cfg, cfg.fetchFn ?? safeFetch);
+        const ok = probe.check === "ok";
+        reply(res, 200, { ok, reason: ok ? undefined : probe.check, ms: Date.now() - started, model: input.cfg.model, baseUrl: probe.baseUrl, models: probe.models }, cors);
       });
       return;
     }

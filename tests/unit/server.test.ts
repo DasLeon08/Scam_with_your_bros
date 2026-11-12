@@ -24,6 +24,14 @@ describe("Node game server", () => {
     const auth = new Headers(init?.headers).get("authorization");
     llmCalls.push({ url, auth });
     if (auth !== `Bearer ${GOOD}`) return new Response("{}", { status: 401 });
+    // like Open WebUI one level deeper: only …/api/v1 answers, and it knows two models
+    if (url.startsWith("https://ask.example.test/")) {
+      if (!url.startsWith("https://ask.example.test/api/v1/")) return new Response("Not Found", { status: 404 });
+      if (url.endsWith("/models")) return new Response('{"data":[{"id":"llama3"},{"id":"gpt-4o"}]}');
+      const body = JSON.parse(String(init?.body ?? "{}"));
+      if (!["llama3", "gpt-4o"].includes(body.model)) return new Response('{"detail":"Model not found"}', { status: 404 });
+      return new Response(JSON.stringify({ choices: [{ message: { content: "ok" } }] }));
+    }
     if (url.endsWith("/models")) return new Response('{"data":[]}');
     return new Response(JSON.stringify({ choices: [{ message: { content: '{"reply":"KI hier!","trust_delta":3}' } }] }));
   }) as unknown as typeof fetch;
@@ -131,8 +139,17 @@ describe("Node game server", () => {
     send({ key: GOOD, baseUrl: "https://my-proxy.example.com/openai/v1/", model: "firma/gpt-4o-mini", auth: "bearer" });
     await until(() => events().length === 3);
     expect(events()[2]).toEqual({ kind: "aiKey", ok: true });
-    expect(llmCalls.at(-1)!.url).toBe("https://my-proxy.example.com/openai/v1/chat/completions");
+    expect(llmCalls.map((c) => c.url)).toContain("https://my-proxy.example.com/openai/v1/chat/completions");
     a.ws.close();
+  });
+
+  it("finds the endpoint with /v1 added and lists the models (e.g. ASK / Open WebUI)", async () => {
+    const test = async (body: object) =>
+      (await fetch(`http://${base}/api/ai/test`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) })).json();
+    const wrongModel = await test({ key: GOOD, baseUrl: "https://ask.example.test/api", model: "gpt-4o-mini" });
+    expect(wrongModel).toMatchObject({ ok: false, reason: "bad_model", baseUrl: "https://ask.example.test/api/v1", models: ["llama3", "gpt-4o"] });
+    const right = await test({ key: GOOD, baseUrl: "https://ask.example.test/api", model: "llama3" });
+    expect(right).toMatchObject({ ok: true, baseUrl: "https://ask.example.test/api/v1" });
   });
 
   it("\"Verbindung testen\": checks an endpoint without a room", async () => {
@@ -147,4 +164,6 @@ describe("Node game server", () => {
     for (let i = 0; i < 4; i++) codes.push((await fetch(`http://${base}/api/ai/test`, { method: "POST", body: "{}" })).status);
     expect(codes).toContain(429);
   });
+
+
 });
